@@ -7,6 +7,7 @@
 namespace App\Models;
 
 use Carbon\Carbon;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -40,65 +41,62 @@ use Spatie\Permission\Traits\HasRoles;
  *
  * @package App\Models
  */
-class User extends Model
+class User extends Authenticatable
 {
-	use HasFactory, HasRoles;
+    use HasFactory, HasRoles;
 
-	protected $table = 'users';
+    protected $table = "users";
 
-	protected $casts = [
-		'branch_id' => 'int',
-		'email_verified_at' => 'datetime',
-		'birthday' => 'datetime'
-	];
+    protected $casts = [
+        "branch_id" => "int",
+        "email_verified_at" => "datetime",
+        "birthday" => "datetime",
+    ];
 
-	protected $hidden = [
-		'password',
-		'remember_token'
-	];
+    protected $hidden = ["password", "remember_token"];
 
-	protected $fillable = [
-		'branch_id',
-		'username',
-		'email',
-		'email_verified_at',
-		'password',
-		'remember_token',
-		'phone',
-		'type_documento',
-		'n_documento',
-		'birthday',
-		'avatar',
-		'avatar_public_id'
-	];
+    protected $fillable = [
+        "branch_id",
+        "username",
+        "email",
+        "email_verified_at",
+        "password",
+        "remember_token",
+        "phone",
+        "type_documento",
+        "n_documento",
+        "birthday",
+        "avatar",
+        "avatar_public_id",
+    ];
 
-	public function branch()
-	{
-		return $this->belongsTo(Branch::class);
-	}
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
+    }
 
-	public function citas()
-	{
-		return $this->hasMany(Cita::class, 'created_by_user_id');
-	}
+    public function citas()
+    {
+        return $this->hasMany(Cita::class, "created_by_user_id");
+    }
 
-	public function medical_records()
-	{
-		return $this->hasMany(MedicalRecord::class, 'veterinarian_id');
-	}
+    public function medical_records()
+    {
+        return $this->hasMany(MedicalRecord::class, "veterinarian_id");
+    }
 
-	public function surgieres()
-	{
-		return $this->hasMany(Surgiere::class, 'veterinarian_id');
-	}
+    public function surgieres()
+    {
+        return $this->hasMany(Surgiere::class, "veterinarian_id");
+    }
 
-	public function vacunas()
-	{
-		return $this->hasMany(Vacuna::class, 'veterinarian_id');
-	}
+    public function vacunas()
+    {
+        return $this->hasMany(Vacuna::class, "veterinarian_id");
+    }
 
-	public function veterinarian_schedules()
-	{
-		return $this->hasMany(VeterinarianSchedule::class, 'veterinarian_id');
-	}
+    public function veterinarian_schedules()
+    {
+        return $this->hasMany(VeterinarianSchedule::class, "veterinarian_id");
+    }
 }

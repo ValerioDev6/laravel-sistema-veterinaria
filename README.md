@@ -1,59 +1,141 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Sistema Veterinario - Documentación de Setup
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+## 1. Generación de modelos con Reliese (scaffolding desde la base de datos)
 
-## About Laravel
+Reliese lee las tablas ya existentes en MySQL y genera los modelos Eloquent automáticamente.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+```bash
+composer require reliese/laravel --dev
+php artisan vendor:publish --tag=reliese-models
+php artisan config:clear
+```
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+Generar todos los modelos de la base de datos:
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+```bash
+php artisan code:models
+```
 
-## Learning Laravel
+Generar solo un modelo puntual (ej. `users`):
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+```bash
+php artisan code:models --table=users
+```
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+Generar modelos de un schema específico:
 
-## Laravel Sponsors
+```bash
+php artisan code:models --schema=shop
+```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+> **Nota:** Reliese genera el modelo con `extends Model`. Para el modelo `User`
+> específicamente hay que cambiarlo a `extends Authenticatable` (ver sección 3),
+> porque Reliese no sabe que esa tabla se usa para login.
 
-### Premium Partners
+---
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+## 1.5 excel y pdf
 
-## Contributing
+composer require phpoffice/phpspreadsheet
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+composer require maatwebsite/excel:4.x-dev
 
-## Code of Conduct
+php artisan vendor:publish --provider="Maatwebsite\Excel\ExcelServiceProvider" --tag=config
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+pára isntalarlo modica la versiond ephp a una comptibl 8.4
 
-## Security Vulnerabilities
+composer require barryvdh/laravel-dompdf
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## 2. Roles y permisos con Spatie
 
-## License
+```bash
+composer require spatie/laravel-permission
+php artisan vendor:publish --provider="Spatie\Permission\PermissionServiceProvider"
+php artisan config:clear
+php artisan migrate
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Esto publica y corre las migraciones de: `permissions`, `roles`,
+`model_has_permissions`, `model_has_roles`, `role_has_permissions`.
+No se escribe ninguna de estas a mano.
+
+---
+
+## 3. Modelo `User` final
+
+El modelo generado por Reliese necesita 3 ajustes para funcionar como usuario
+autenticable con roles:
+
+```php
+<?php
+
+namespace App\Models;
+
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Factories\HasFactory;   // necesario para User::factory()
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Foundation\Auth\User as Authenticatable;  // en vez de Model
+use Laravel\Sanctum\HasApiTokens;                         // si se consume via API
+use Spatie\Permission\Traits\HasRoles;                    // roles y permisos
+
+class User extends Authenticatable
+{
+    use HasFactory, HasApiTokens, HasRoles;
+
+
+}
+```
+
+**Por qué cada cambio:**
+
+| Cambio                    | Motivo                                                               |
+| ------------------------- | -------------------------------------------------------------------- |
+| `extends Authenticatable` | Sin esto no hay `Auth::attempt()`, login, ni sesión real.            |
+| `HasFactory`              | Necesario para `User::factory()` en seeders/tests.                   |
+| `HasApiTokens` (Sanctum)  | Necesario si la API se consume vía AJAX/fetch desde el propio Blade. |
+| `HasRoles` (Spatie)       | Habilita `assignRole()`, `hasPermissionTo()`, etc.                   |
+
+---
+
+## 4. `UserFactory` corregida
+
+La tabla usa `username`, no `name` (el default de Laravel). Hay que sobrescribir
+`database/factories/UserFactory.php` completo:
+
+## 5. Ejecutar el seeder de roles y permisos
+
+`PermissionsDemoSeeder` crea todos los permisos, los 3 roles
+(`Super-Admin`, `Veterinario`, `Recepcionista`) y un usuario admin de prueba.
+Usa `firstOrCreate` en vez de `create`, por lo que se puede correr varias
+veces sin romperse por duplicados.
+
+```bash
+php artisan db:seed --class=PermissionsDemoSeeder
+```
+
+Usuario de prueba generado:
+
+| Campo    | Valor             |
+| -------- | ----------------- |
+| username | `admin`           |
+| email    | `admin@gmail.com` |
+| password | `12345678`        |
+| rol      | `Super-Admin`     |
+
+`guard_name` usado: **`api`** (porque el propio Blade consume la API vía
+AJAX/fetch en vez de sesión tradicional — requiere Sanctum configurado).
+w
+
+---
+
+## Errores comunes durante el setup (referencia rápida)
+
+| Error                                                               | Causa                                                         | Solución                                                                                  |
+| ------------------------------------------------------------------- | ------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `Table 'users' already exists`                                      | Se importó el `.sql` manual y luego se corrió `migrate`       | Usar `Schema::hasTable('users')` para saltar la creación si ya existe                     |
+| `Cannot redeclare ... up()`                                         | Quedaron dos métodos `up()` en el mismo archivo tras editar   | Revisar que el archivo tenga un solo `up()` y un solo `down()`                            |
+| `Call to undefined method User::factory()`                          | Falta el trait `HasFactory` en el modelo                      | Agregar `use HasFactory;`                                                                 |
+| `Unknown column 'name' in INSERT`                                   | `UserFactory` no actualizada, sigue generando `name`          | Sobrescribir la factory completa (sección 4)                                              |
+| `A permission already exists for guard`                             | El seeder se corrió parcialmente antes de fallar              | Usar `firstOrCreate` en vez de `create`, o truncar las tablas de permisos                 |
+| `Foreign key constraint is incorrectly formed` (en `migrate:fresh`) | Faltan migraciones reales para tablas creadas solo con `.sql` | Crear la migración de la tabla referenciada (ej. `branches`) con fecha anterior a `users` |

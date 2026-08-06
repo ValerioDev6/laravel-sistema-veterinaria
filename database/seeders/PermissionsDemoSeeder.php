@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\User;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -290,7 +291,7 @@ class PermissionsDemoSeeder extends Seeder
         ]);
 
         // Usuario administrador de prueba
-        $admin = \App\Models\User::factory()->create([
+        $admin = User::factory()->create([
             "username" => "admin",
             "email" => "admin@gmail.com",
             "password" => bcrypt("12345678"),

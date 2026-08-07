@@ -41,6 +41,75 @@
         });
     }
 
+    function mostrarToastError(errors) {
+        if (!errors || typeof Swal === "undefined") return;
+        const firstKey = Object.keys(errors)[0];
+        const mensaje = errors[firstKey]?.[0] ?? "Ocurrió un error";
+        Swal.fire({
+            toast: true,
+            position: "top-end",
+            icon: "warning",
+            title: mensaje,
+            showConfirmButton: false,
+            timer: 3500,
+            timerProgressBar: true,
+        });
+    }
+
+    // ------------------------------------------------------------------
+    // Validación previa: evitar duplicar propietarios antes de enviar
+    // ------------------------------------------------------------------
+    function validarPropietarioDuplicado(datos) {
+        const modoNuevo =
+            !datos.get("owner_id") &&
+            (datos.get("first_name") || datos.get("email") || datos.get("phone"));
+
+        if (!modoNuevo) return Promise.resolve();
+
+        const nombre = [datos.get("first_name"), datos.get("last_name")]
+            .filter(Boolean)
+            .join(" ")
+            .trim()
+            .toLowerCase();
+        const email = (datos.get("email") || "").trim().toLowerCase();
+        const phone = (datos.get("phone") || "").trim();
+
+        if (!nombre && !email && !phone) return Promise.resolve();
+
+        return ajax
+            .get("/admin/owners", { per_page: 200, search: nombre || "" })
+            .then((res) => {
+                const duplicado = (res.data || []).some((owner) => {
+                    const nombreExiste =
+                        nombre &&
+                        (owner.first_name + " " + owner.last_name)
+                            .trim()
+                            .toLowerCase() === nombre;
+                    const emailExiste =
+                        email && owner.email?.toLowerCase() === email;
+                    const phoneExiste =
+                        phone && (owner.phone || "").trim() === phone;
+                    return nombreExiste || emailExiste || phoneExiste;
+                });
+
+                if (duplicado) {
+                    Swal.fire({
+                        toast: true,
+                        position: "top-end",
+                        icon: "warning",
+                        title:
+                            "El propietario ya está registrado. Revisa los datos.",
+                        showConfirmButton: false,
+                        timer: 3500,
+                        timerProgressBar: true,
+                    });
+                    return `El propietario "${nombre}" ya está registrado.`;
+                }
+                return null;
+            })
+            .catch(() => null);
+    }
+
     // ------------------------------------------------------------------
     // Dropzone de la foto (previsualización simple)
     // ------------------------------------------------------------------
@@ -349,6 +418,14 @@
 
         $("#owner_id").val(fila.owner_id || "");
         setearPropietarioRequerido(true);
+        $("#first_name").val(fila.owner_first_name ?? "");
+        $("#last_name").val(fila.owner_last_name ?? "");
+        $("#email").val(fila.owner_email ?? "");
+        $("#phone").val(fila.owner_phone ?? "");
+        $("#address").val(fila.owner_address ?? "");
+        $("#city").val(fila.owner_city ?? "");
+        $("#type_documento").val(fila.owner_type_documento ?? "");
+        $("#n_documento").val(fila.owner_n_documento ?? "");
         $("#name").val(fila.name ?? "");
         $("#species_id").val(fila.species_id ?? "");
         $("#gender").val(fila.gender ?? "");
@@ -408,21 +485,36 @@
                 ($form.attr("data-id") ? "/" + $form.attr("data-id") : "");
             const metodo = $form.attr("data-id") ? "put" : "post";
 
-            ajax[metodo](ruta, recolectarDatos($form[0]))
-                .then((res) => {
-                    const inline = !!$form.closest(".tab-pane").length;
-                    Swal.fire("Listo", res.message, "success");
-                    if (inline) {
-                        abrirFormularioNuevo();
-                        if (dataTable) dataTable.ajax.reload();
-                    } else {
-                        window.location.href = "/admin/pacientes";
+            const datos = recolectarDatos($form[0]);
+            const prevalidar =
+                metodo === "post" ? validarPropietarioDuplicado(datos) : Promise.resolve();
+
+            prevalidar
+                .then((duplicado) => {
+                    if (duplicado) {
+                        $btn.prop("disabled", false);
+                        return;
                     }
-                })
-                .catch((error) => {
-                    if (error.status === 422) {
-                        pintarErroresValidacion(error.response.errors, formId);
-                    }
+                    return ajax[metodo](ruta, datos)
+                        .then((res) => {
+                            const inline = !!$form.closest(".tab-pane").length;
+                            Swal.fire("Listo", res.message, "success");
+                            if (inline) {
+                                abrirFormularioNuevo();
+                                if (dataTable) dataTable.ajax.reload();
+                            } else {
+                                window.location.href = "/admin/pacientes";
+                            }
+                        })
+                        .catch((error) => {
+                            if (error.status === 422) {
+                                mostrarToastError(error.response.errors);
+                                pintarErroresValidacion(
+                                    error.response.errors,
+                                    formId,
+                                );
+                            }
+                        });
                 })
                 .finally(() => {
                     $btn.prop("disabled", false);

@@ -27,4 +27,12 @@ class StoreBreedRequest extends FormRequest
             ],
         ];
     }
+
+    public function messages(): array
+    {
+        return [
+            "name.unique" => "El nombre de la raza ya existe para esta especie.",
+            "name.required" => "El nombre es obligatorio.",
+        ];
+    }
 }

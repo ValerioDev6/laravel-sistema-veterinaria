@@ -38,6 +38,21 @@
         });
     }
 
+    function mostrarToastError(errors) {
+        if (!errors || typeof Swal === "undefined") return;
+        const firstKey = Object.keys(errors)[0];
+        const mensaje = errors[firstKey]?.[0] ?? "Ocurrió un error";
+        Swal.fire({
+            toast: true,
+            position: "top-end",
+            icon: "warning",
+            title: mensaje,
+            showConfirmButton: false,
+            timer: 3500,
+            timerProgressBar: true,
+        });
+    }
+
     function recolectarDatos(form) {
         const datos = new FormData();
         const nombre = form.elements["name"];
@@ -254,6 +269,7 @@
                 })
                 .catch((error) => {
                     if (error.status === 422) {
+                        mostrarToastError(error.response.errors);
                         pintarErroresValidacion(
                             error.response.errors,
                             "formModalSpecies",
@@ -293,6 +309,7 @@
                 })
                 .catch((error) => {
                     if (error.status === 422) {
+                        mostrarToastError(error.response.errors);
                         pintarErroresValidacion(
                             error.response.errors,
                             "formCrearSpecies",
@@ -323,6 +340,7 @@
                 })
                 .catch((error) => {
                     if (error.status === 422) {
+                        mostrarToastError(error.response.errors);
                         pintarErroresValidacion(
                             error.response.errors,
                             "formEditarSpecies",

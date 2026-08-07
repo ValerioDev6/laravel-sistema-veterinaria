@@ -22,4 +22,12 @@ class UpdateSpeciesRequest extends FormRequest
             ],
         ];
     }
+
+    public function messages(): array
+    {
+        return [
+            "name.unique" => "El nombre ya existe.",
+            "name.required" => "El nombre es obligatorio.",
+        ];
+    }
 }

@@ -17,4 +17,12 @@ class StoreSpeciesRequest extends FormRequest
             "name" => ["required", "string", "max:50", "unique:species,name"],
         ];
     }
+
+    public function messages(): array
+    {
+        return [
+            "name.unique" => "El nombre ya existe.",
+            "name.required" => "El nombre es obligatorio.",
+        ];
+    }
 }

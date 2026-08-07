@@ -1,6 +1,10 @@
 (function () {
     "use strict";
 
+    if (window.Dropzone) {
+        Dropzone.autoDiscover = false;
+    }
+
     // ------------------------------------------------------------------
     // Helpers de validación de formulario (inline, sin depender de js/helpers/)
     // ------------------------------------------------------------------
@@ -15,9 +19,8 @@
             if (!input) return;
 
             input.classList.add("is-invalid");
-            const feedback = input
-                .closest(".mb-3")
-                ?.querySelector(".invalid-feedback");
+            const contenedor = input.closest("[class*='col-'], .mb-3");
+            const feedback = contenedor?.querySelector(".invalid-feedback");
             if (feedback) {
                 feedback.textContent = Array.isArray(mensajes)
                     ? mensajes.join(", ")
@@ -35,6 +38,77 @@
         );
         form.querySelectorAll(".invalid-feedback").forEach((el) => {
             el.textContent = "";
+        });
+    }
+
+    // ------------------------------------------------------------------
+    // Dropzone de la foto (previsualización simple)
+    // ------------------------------------------------------------------
+    let dropzoneFoto = null;
+
+    function initDropzoneFoto() {
+        if (!window.Dropzone) return;
+        const el = document.getElementById("dropzoneFoto");
+        if (!el) return;
+
+        dropzoneFoto = new Dropzone("#dropzoneFoto", {
+            url: "#",
+            autoProcessQueue: false,
+            maxFiles: 1,
+            acceptedFiles: "image/*",
+            addRemoveLinks: true,
+            dictDefaultMessage: "Arrastra la foto o haz clic para seleccionar",
+            dictRemoveFile: "Quitar",
+            maxFilesize: 5,
+        });
+
+        dropzoneFoto.on("addedfile", function (file) {
+            while (dropzoneFoto.files.length > 1) {
+                dropzoneFoto.removeFile(dropzoneFoto.files[0]);
+            }
+        });
+
+        dropzoneFoto.on("maxfilesexceeded", function (file) {
+            dropzoneFoto.removeFile(file);
+        });
+    }
+
+    function mostrarFotoDropzone(url) {
+        const preview = document.getElementById("previewFotoActual");
+        if (preview) {
+            if (url) {
+                preview.classList.remove("d-none");
+                preview.querySelector("img").src = url;
+            } else {
+                preview.classList.add("d-none");
+                preview.querySelector("img").removeAttribute("src");
+            }
+        }
+        if (dropzoneFoto) dropzoneFoto.removeAllFiles(true);
+        if (!url) return;
+        const mock = {
+            name: "foto_actual",
+            size: 1,
+            type: "image/jpeg",
+            accepted: true,
+            _recolectar: false,
+        };
+        dropzoneFoto.files.push(mock);
+        dropzoneFoto.emit("addedfile", mock);
+        dropzoneFoto.emit("thumbnail", mock, url);
+        dropzoneFoto.emit("complete", mock);
+    }
+
+    function setearPropietarioRequerido(esEditar) {
+        ["first_name", "last_name", "phone"].forEach((campo) => {
+            const el = document.getElementById(campo);
+            if (el) {
+                if (esEditar) {
+                    el.removeAttribute("required");
+                } else {
+                    el.setAttribute("required", "");
+                }
+            }
         });
     }
 
@@ -274,6 +348,7 @@
         if ($tituloForm.length) $tituloForm.text("Editar Mascota");
 
         $("#owner_id").val(fila.owner_id || "");
+        setearPropietarioRequerido(true);
         $("#name").val(fila.name ?? "");
         $("#species_id").val(fila.species_id ?? "");
         $("#gender").val(fila.gender ?? "");
@@ -289,6 +364,8 @@
         if (cargarRazasTab && fila.breed_id) {
             cargarRazasTab(fila.breed_id);
         }
+
+        mostrarFotoDropzone(fila.photo);
     }
 
     function abrirFormularioNuevo() {
@@ -298,9 +375,16 @@
             $formTab[0].reset();
             $formTab.removeAttr("data-id data-modo");
             limpiarErroresValidacion("formCrearPaciente");
+            setearPropietarioRequerido(false);
             $("#breed_id")
                 .html('<option value="">Primero elige la especie</option>')
                 .prop("disabled", true);
+            if (dropzoneFoto) dropzoneFoto.removeAllFiles(true);
+            const previewFoto = document.getElementById("previewFotoActual");
+            if (previewFoto) {
+                previewFoto.classList.add("d-none");
+                previewFoto.querySelector("img").removeAttribute("src");
+            }
         }
     }
 
@@ -372,6 +456,14 @@
 
         const campos = [
             "owner_id",
+            "first_name",
+            "last_name",
+            "email",
+            "phone",
+            "address",
+            "city",
+            "type_documento",
+            "n_documento",
             "name",
             "species_id",
             "breed_id",
@@ -388,11 +480,21 @@
             }
         });
 
-        const foto = form.elements["photo"];
-        if (foto && foto.files && foto.files.length) {
-            datos.append("photo", foto.files[0]);
+        if (dropzoneFoto && dropzoneFoto.files && dropzoneFoto.files.length) {
+            const archivo = dropzoneFoto.files[0];
+            if (archivo._recolectar !== false) {
+                datos.append("photo", archivo);
+            }
+        } else {
+            const foto = form.elements["photo"];
+            if (foto && foto.files && foto.files.length) {
+                datos.append("photo", foto.files[0]);
+            }
         }
 
         return datos;
     }
+
+    initDropzoneFoto();
+    setearPropietarioRequerido(false);
 })();

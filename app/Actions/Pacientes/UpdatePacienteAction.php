@@ -10,7 +10,7 @@ class UpdatePacienteAction
     public static function execute(Paciente $paciente, array $data = []): Paciente
     {
         $datos = [
-            "owner_id" => data_get($data, "owner_id"),
+            "owner_id" => data_get($data, "owner_id", $paciente->owner_id),
             "species_id" => data_get($data, "species_id"),
             "breed_id" => data_get($data, "breed_id"),
             "name" => data_get($data, "name"),

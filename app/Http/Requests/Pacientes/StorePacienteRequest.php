@@ -13,8 +13,18 @@ class StorePacienteRequest extends FormRequest
 
     public function rules(): array
     {
+        $nuevoPropietario = !$this->filled("owner_id");
+
         return [
-            "owner_id" => ["required", "integer", "exists:owners,id"],
+            "owner_id" => ["nullable", "integer", "exists:owners,id"],
+            "first_name" => [$nuevoPropietario ? "required" : "nullable", "string", "max:100"],
+            "last_name" => [$nuevoPropietario ? "required" : "nullable", "string", "max:100"],
+            "phone" => [$nuevoPropietario ? "required" : "nullable", "string", "max:20"],
+            "email" => ["nullable", "email", "max:100"],
+            "address" => ["nullable", "string", "max:200"],
+            "city" => ["nullable", "string", "max:100"],
+            "type_documento" => ["nullable", "string", "max:50", "in:DNI,CE,Pasaporte"],
+            "n_documento" => ["nullable", "string", "max:50"],
             "species_id" => ["required", "integer", "exists:species,id"],
             "breed_id" => ["nullable", "integer", "exists:breeds,id"],
             "name" => ["required", "string", "max:100"],

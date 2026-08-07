@@ -28,6 +28,8 @@
     <link href="https://cdn.datatables.net/1.13.11/css/dataTables.bootstrap5.min.css" rel="stylesheet" type="text/css" />
     <!-- SweetAlert2 -->
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet" type="text/css" />
+    <!-- Dropzone -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/min/dropzone.min.css" rel="stylesheet" type="text/css" />
 
     @stack('styles')
 </head>
@@ -359,6 +361,8 @@
     <script src="https://cdn.datatables.net/1.13.11/js/dataTables.bootstrap5.min.js"></script>
     <!-- SweetAlert2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Dropzone JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/min/dropzone.min.js"></script>
 
     <!-- Capa AJAX propia del proyecto -->
     <script src="{{ asset('js/config/ajax.js') }}"></script>

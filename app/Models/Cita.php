@@ -66,6 +66,11 @@ class Cita extends Model
 		return $this->belongsTo(Paciente::class, 'pet_id');
 	}
 
+	public function veterinarian()
+	{
+		return $this->belongsTo(User::class, 'veterinarian_id');
+	}
+
 	public function user()
 	{
 		return $this->belongsTo(User::class, 'created_by_user_id');

@@ -51,6 +51,7 @@ class User extends Authenticatable
         "branch_id" => "int",
         "email_verified_at" => "datetime",
         "birthday" => "datetime",
+        "is_active" => "boolean",
     ];
 
     protected $hidden = ["password", "remember_token"];
@@ -68,6 +69,7 @@ class User extends Authenticatable
         "birthday",
         "avatar",
         "avatar_public_id",
+        "is_active",
     ];
 
     public function branch()

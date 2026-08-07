@@ -1,0 +1,116 @@
+<x-app-layout>
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title-box d-sm-flex align-items-center justify-content-between bg-galaxy-transparent">
+                <h4 class="mb-sm-0">{{ $title }}</h4>
+
+                <div class="page-title-right">
+                    <ol class="breadcrumb m-0">
+                        <li class="breadcrumb-item">
+                            <a href="{{ route('admin.pacientes.index') }}">Pacientes</a>
+                        </li>
+                        <li class="breadcrumb-item active">Editar Mascota</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">Editar Mascota</h4>
+                </div>
+                <div class="card-body">
+                    <form id="formEditarPaciente" data-id="{{ $paciente->id }}">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="owner_id">Propietario</label>
+                                <select class="form-select" id="owner_id" name="owner_id">
+                                    <option value="">Seleccionar propietario</option>
+                                    @foreach ($owners as $value => $label)
+                                        <option value="{{ $value }}" @selected($paciente->owner_id == $value)>{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                                <div class="invalid-feedback"></div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="name">Nombre</label>
+                                <input type="text" class="form-control" id="name" name="name" value="{{ $paciente->name }}">
+                                <div class="invalid-feedback"></div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label" for="species_id">Especie</label>
+                                <select class="form-select" id="species_id" name="species_id">
+                                    <option value="">Seleccionar especie</option>
+                                    @foreach ($species as $value => $label)
+                                        <option value="{{ $value }}" @selected($paciente->species_id == $value)>{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                                <div class="invalid-feedback"></div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label" for="breed_id">Raza</label>
+                                <select class="form-select" id="breed_id" name="breed_id" data-selected="{{ $paciente->breed_id }}">
+                                    <option value="">Seleccione la especie primero</option>
+                                </select>
+                                <div class="invalid-feedback"></div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label" for="gender">Sexo</label>
+                                <select class="form-select" id="gender" name="gender">
+                                    <option value="desconocido" @selected($paciente->gender == 'desconocido')>Desconocido</option>
+                                    <option value="macho" @selected($paciente->gender == 'macho')>Macho</option>
+                                    <option value="hembra" @selected($paciente->gender == 'hembra')>Hembra</option>
+                                </select>
+                                <div class="invalid-feedback"></div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label" for="birth_date">Fecha de nacimiento</label>
+                                <input type="date" class="form-control" id="birth_date" name="birth_date" value="{{ $paciente->birth_date?->format('Y-m-d') }}">
+                                <div class="invalid-feedback"></div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label" for="color">Color</label>
+                                <input type="text" class="form-control" id="color" name="color" value="{{ $paciente->color }}">
+                                <div class="invalid-feedback"></div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label" for="weight">Peso (kg)</label>
+                                <input type="number" step="0.01" min="0" class="form-control" id="weight" name="weight" value="{{ $paciente->weight }}">
+                                <div class="invalid-feedback"></div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="photo">Foto</label>
+                                <input type="file" class="form-control" id="photo" name="photo" accept="image/*">
+                                <div class="invalid-feedback"></div>
+                                @if ($paciente->photo)
+                                    <div class="mt-2">
+                                        <img src="{{ $paciente->photo }}" alt="Foto" class="rounded" style="max-height: 60px;">
+                                    </div>
+                                @endif
+                            </div>
+                            <div class="col-12 mb-3">
+                                <label class="form-label" for="medical_notes">Notas médicas</label>
+                                <textarea class="form-control" id="medical_notes" name="medical_notes" rows="3">{{ $paciente->medical_notes }}</textarea>
+                                <div class="invalid-feedback"></div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary" id="btnActualizarPaciente">
+                                <i class="ri-save-line me-1"></i>Actualizar
+                            </button>
+                            <a href="{{ route('admin.pacientes.index') }}" class="btn btn-light">Cancelar</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @push('scripts')
+        <script src="{{ asset('js/pages/pacientes.js') }}"></script>
+    @endpush
+</x-app-layout>

@@ -24,6 +24,11 @@
     <!-- custom Css-->
     <link href="{{ asset('assets/css/custom.min.css') }}" rel="stylesheet" type="text/css" />
 
+    <!-- DataTables (core + Bootstrap 5 styling) -->
+    <link href="https://cdn.datatables.net/1.13.11/css/dataTables.bootstrap5.min.css" rel="stylesheet" type="text/css" />
+    <!-- SweetAlert2 -->
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet" type="text/css" />
+
     @stack('styles')
 </head>
 
@@ -193,44 +198,16 @@
                             <span data-key="t-customers">Clientes</span>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link menu-link" href="#sidebarOwners" data-bs-toggle="collapse"
-                                role="button" aria-expanded="false" aria-controls="sidebarOwners">
+                            <a class="nav-link menu-link" href="{{ route('admin.owners.index') }}">
                                 <i class="ri-user-heart-line"></i>
                                 <span data-key="t-owners">Propietarios</span>
                             </a>
-                            <div class="collapse menu-dropdown" id="sidebarOwners">
-                                <ul class="nav nav-sm flex-column">
-                                    <li class="nav-item">
-                                        <a href="#" class="nav-link" data-key="t-owners-list">Listado</a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a href="#" class="nav-link" data-key="t-owners-create">Nuevo
-                                            Propietario</a>
-                                    </li>
-                                </ul>
-                            </div>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link menu-link" href="#sidebarPets" data-bs-toggle="collapse"
-                                role="button" aria-expanded="false" aria-controls="sidebarPets">
+                            <a class="nav-link menu-link" href="{{ route('admin.pacientes.index') }}">
                                 <i class="ri-user-heart-line"></i>
                                 <span data-key="t-pets">Pacientes</span>
                             </a>
-                            <div class="collapse menu-dropdown" id="sidebarPets">
-                                <ul class="nav nav-sm flex-column">
-                                    <li class="nav-item">
-                                        <a href="#" class="nav-link" data-key="t-pets-list">Listado</a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a href="#" class="nav-link" data-key="t-pets-create">Nuevo
-                                            Paciente</a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a href="#" class="nav-link" data-key="t-pets-profile">Ficha del
-                                            Paciente</a>
-                                    </li>
-                                </ul>
-                            </div>
                         </li>
 
                         <li class="menu-title">
@@ -245,14 +222,10 @@
                             <div class="collapse menu-dropdown" id="sidebarAppointments">
                                 <ul class="nav nav-sm flex-column">
                                     <li class="nav-item">
-                                        <a href="#" class="nav-link" data-key="t-appointments-list">Listado</a>
+                                        <a href="{{ route('admin.citas.index') }}" class="nav-link" data-key="t-appointments-list">Listado</a>
                                     </li>
                                     <li class="nav-item">
-                                        <a href="#" class="nav-link" data-key="t-appointments-create">Nueva
-                                            Cita</a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a href="#" class="nav-link"
+                                        <a href="{{ route('admin.citas.calendar') }}" class="nav-link"
                                             data-key="t-appointments-calendar">Calendario</a>
                                     </li>
                                 </ul>
@@ -267,39 +240,23 @@
                             <div class="collapse menu-dropdown" id="sidebarVaccines">
                                 <ul class="nav nav-sm flex-column">
                                     <li class="nav-item">
-                                        <a href="#" class="nav-link" data-key="t-vaccines-list">Listado</a>
+                                        <a href="{{ route('admin.vacunas.index') }}" class="nav-link" data-key="t-vaccines-list">Listado</a>
                                     </li>
                                     <li class="nav-item">
-                                        <a href="#" class="nav-link" data-key="t-vaccines-create">Registrar
-                                            Vacuna</a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a href="#" class="nav-link" data-key="t-vaccine-types">Tipos de
+                                        <a href="{{ route('admin.vaccine-types.index') }}" class="nav-link" data-key="t-vaccine-types">Tipos de
                                             Vacuna</a>
                                     </li>
                                 </ul>
                             </div>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link menu-link" href="#sidebarSurgeries" data-bs-toggle="collapse"
-                                role="button" aria-expanded="false" aria-controls="sidebarSurgeries">
+                            <a class="nav-link menu-link" href="{{ route('admin.cirugias.index') }}">
                                 <i class="ri-scissors-cut-line"></i>
                                 <span data-key="t-surgeries">Cirugías</span>
                             </a>
-                            <div class="collapse menu-dropdown" id="sidebarSurgeries">
-                                <ul class="nav nav-sm flex-column">
-                                    <li class="nav-item">
-                                        <a href="#" class="nav-link" data-key="t-surgeries-list">Listado</a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a href="#" class="nav-link" data-key="t-surgeries-create">Registrar
-                                            Cirugía</a>
-                                    </li>
-                                </ul>
-                            </div>
                         </li>
                         <li class="nav-item">
-                            <a href="#" class="nav-link">
+                            <a class="nav-link menu-link" href="{{ route('admin.medical-records.index') }}">
                                 <i class="ri-file-list-3-line"></i>
                                 <span data-key="t-medical-records">Historial Clínico</span>
                             </a>
@@ -309,27 +266,9 @@
                             <span data-key="t-finance">Facturación</span>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link menu-link" href="#sidebarInvoices" data-bs-toggle="collapse"
-                                role="button" aria-expanded="false" aria-controls="sidebarInvoices">
+                            <a class="nav-link menu-link" href="{{ route('admin.invoices.index') }}">
                                 <i class="ri-file-list-3-line"></i>
                                 <span data-key="t-invoices">Facturas</span>
-                            </a>
-                            <div class="collapse menu-dropdown" id="sidebarInvoices">
-                                <ul class="nav nav-sm flex-column">
-                                    <li class="nav-item">
-                                        <a href="#" class="nav-link" data-key="t-invoices-list">Listado</a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a href="#" class="nav-link" data-key="t-invoices-create">Nueva
-                                            Factura</a>
-                                    </li>
-                                </ul>
-                            </div>
-                        </li>
-                        <li class="nav-item">
-                            <a href="#" class="nav-link">
-                                <i class="ri-bank-card-line"></i>
-                                <span data-key="t-payments">Pagos</span>
                             </a>
                         </li>
 
@@ -337,40 +276,16 @@
                             <span data-key="t-catalog">Catálogo</span>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link menu-link" href="#sidebarServices" data-bs-toggle="collapse"
-                                role="button" aria-expanded="false" aria-controls="sidebarServices">
+                            <a class="nav-link menu-link" href="{{ route('admin.services.index') }}">
                                 <i class="ri-briefcase-line"></i>
                                 <span data-key="t-services">Servicios</span>
                             </a>
-                            <div class="collapse menu-dropdown" id="sidebarServices">
-                                <ul class="nav nav-sm flex-column">
-                                    <li class="nav-item">
-                                        <a href="#" class="nav-link" data-key="t-services-list">Listado</a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a href="#" class="nav-link" data-key="t-services-create">Nuevo
-                                            Servicio</a>
-                                    </li>
-                                </ul>
-                            </div>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link menu-link" href="#sidebarMedicines" data-bs-toggle="collapse"
-                                role="button" aria-expanded="false" aria-controls="sidebarMedicines">
+                            <a class="nav-link menu-link" href="{{ route('admin.medicines.index') }}">
                                 <i class="ri-first-aid-kit-line"></i>
                                 <span data-key="t-medicines">Medicamentos</span>
                             </a>
-                            <div class="collapse menu-dropdown" id="sidebarMedicines">
-                                <ul class="nav nav-sm flex-column">
-                                    <li class="nav-item">
-                                        <a href="#" class="nav-link" data-key="t-medicines-list">Listado</a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a href="#" class="nav-link" data-key="t-medicines-create">Nuevo
-                                            Medicamento</a>
-                                    </li>
-                                </ul>
-                            </div>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link menu-link" href="#sidebarSpecies" data-bs-toggle="collapse"
@@ -381,10 +296,10 @@
                             <div class="collapse menu-dropdown" id="sidebarSpecies">
                                 <ul class="nav nav-sm flex-column">
                                     <li class="nav-item">
-                                        <a href="#" class="nav-link" data-key="t-species-list">Especies</a>
+                                        <a href="{{ route('admin.species.index') }}" class="nav-link" data-key="t-species-list">Especies</a>
                                     </li>
                                     <li class="nav-item">
-                                        <a href="#" class="nav-link" data-key="t-breeds-list">Razas</a>
+                                        <a href="{{ route('admin.breeds.index') }}" class="nav-link" data-key="t-breeds-list">Razas</a>
                                     </li>
                                 </ul>
                             </div>
@@ -394,43 +309,22 @@
                             <span data-key="t-config">Configuración</span>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link menu-link" href="#sidebarBranches" data-bs-toggle="collapse"
-                                role="button" aria-expanded="false" aria-controls="sidebarBranches">
+                            <a class="nav-link menu-link" href="{{ route('admin.branches.index') }}">
                                 <i class="ri-store-line"></i>
                                 <span data-key="t-branches">Sucursales</span>
                             </a>
-                            <div class="collapse menu-dropdown" id="sidebarBranches">
-                                <ul class="nav nav-sm flex-column">
-                                    <li class="nav-item">
-                                        <a href="#" class="nav-link" data-key="t-branches-list">Listado</a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a href="#" class="nav-link" data-key="t-branches-create">Nueva
-                                            Sucursal</a>
-                                    </li>
-                                </ul>
-                            </div>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link menu-link" href="#sidebarStaff" data-bs-toggle="collapse"
-                                role="button" aria-expanded="false" aria-controls="sidebarStaff">
+                            <a class="nav-link menu-link" href="{{ route('admin.usuarios.index') }}">
                                 <i class="ri-user-settings-line"></i>
                                 <span data-key="t-staff">Personal</span>
                             </a>
-                            <div class="collapse menu-dropdown" id="sidebarStaff">
-                                <ul class="nav nav-sm flex-column">
-                                    <li class="nav-item">
-                                        <a href="#" class="nav-link" data-key="t-staff-list">Listado</a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a href="#" class="nav-link" data-key="t-staff-create">Nuevo
-                                            Usuario</a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a href="#" class="nav-link" data-key="t-schedules">Horarios</a>
-                                    </li>
-                                </ul>
-                            </div>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link menu-link" href="{{ route('admin.veterinarian-schedules.index') }}">
+                                <i class="ri-calendar-check-line"></i>
+                                <span data-key="t-schedules">Horarios</span>
+                            </a>
                         </li>
                     </ul>
                 </div>
@@ -474,6 +368,20 @@
     <script src="{{ asset('assets/libs/simplebar/simplebar.min.js') }}"></script>
     <script src="{{ asset('assets/libs/node-waves/waves.min.js') }}"></script>
     <script src="{{ asset('assets/js/app.js') }}"></script>
+
+    <!-- jQuery (solo requerido por DataTables) -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <!-- DataTables JS -->
+    <script src="https://cdn.datatables.net/1.13.11/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.11/js/dataTables.bootstrap5.min.js"></script>
+    <!-- SweetAlert2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- Capa AJAX propia del proyecto -->
+    <script src="{{ asset('js/config/ajax.js') }}"></script>
+    <!-- Helpers JS de formulario -->
+    <script src="{{ asset('js/helpers/form-helpers.js') }}"></script>
+
     @stack('scripts')
 </body>
 

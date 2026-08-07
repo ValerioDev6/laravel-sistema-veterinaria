@@ -49,4 +49,18 @@ class VeterinarianSchedule extends Model
 	{
 		return $this->belongsTo(User::class, 'veterinarian_id');
 	}
+
+	public function getDayLabelAttribute(): string
+	{
+		return match ((int) $this->day_of_week) {
+			0 => 'Domingo',
+			1 => 'Lunes',
+			2 => 'Martes',
+			3 => 'Miércoles',
+			4 => 'Jueves',
+			5 => 'Viernes',
+			6 => 'Sábado',
+			default => 'Desconocido',
+		};
+	}
 }

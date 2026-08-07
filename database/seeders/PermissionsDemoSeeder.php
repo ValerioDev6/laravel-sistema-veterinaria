@@ -30,44 +30,44 @@ class PermissionsDemoSeeder extends Seeder
         // ---------------------------------------------------------------
         // ROLES Y USUARIOS (Spatie)
         // ---------------------------------------------------------------
-        Permission::create(["guard_name" => $guard, "name" => "register_rol"]);
-        Permission::create(["guard_name" => $guard, "name" => "list_rol"]);
-        Permission::create(["guard_name" => $guard, "name" => "edit_rol"]);
-        Permission::create(["guard_name" => $guard, "name" => "delete_rol"]);
+        Permission::firstOrCreate(["guard_name" => $guard, "name" => "register_rol"]);
+        Permission::firstOrCreate(["guard_name" => $guard, "name" => "list_rol"]);
+        Permission::firstOrCreate(["guard_name" => $guard, "name" => "edit_rol"]);
+        Permission::firstOrCreate(["guard_name" => $guard, "name" => "delete_rol"]);
 
         // ---------------------------------------------------------------
         // STAFF / VETERINARIOS (tabla users)
         // ---------------------------------------------------------------
-        Permission::create([
+        Permission::firstOrCreate([
             "guard_name" => $guard,
             "name" => "register_staff",
         ]);
-        Permission::create(["guard_name" => $guard, "name" => "list_staff"]);
-        Permission::create(["guard_name" => $guard, "name" => "edit_staff"]);
-        Permission::create(["guard_name" => $guard, "name" => "delete_staff"]);
-        Permission::create(["guard_name" => $guard, "name" => "profile_staff"]);
+        Permission::firstOrCreate(["guard_name" => $guard, "name" => "list_staff"]);
+        Permission::firstOrCreate(["guard_name" => $guard, "name" => "edit_staff"]);
+        Permission::firstOrCreate(["guard_name" => $guard, "name" => "delete_staff"]);
+        Permission::firstOrCreate(["guard_name" => $guard, "name" => "profile_staff"]);
 
         // ---------------------------------------------------------------
         // BRANCHES (sedes)
         // ---------------------------------------------------------------
-        Permission::create([
+        Permission::firstOrCreate([
             "guard_name" => $guard,
             "name" => "register_branch",
         ]);
-        Permission::create(["guard_name" => $guard, "name" => "list_branch"]);
-        Permission::create(["guard_name" => $guard, "name" => "edit_branch"]);
-        Permission::create(["guard_name" => $guard, "name" => "delete_branch"]);
+        Permission::firstOrCreate(["guard_name" => $guard, "name" => "list_branch"]);
+        Permission::firstOrCreate(["guard_name" => $guard, "name" => "edit_branch"]);
+        Permission::firstOrCreate(["guard_name" => $guard, "name" => "delete_branch"]);
 
         // ---------------------------------------------------------------
         // VETERINARIAN_SCHEDULES (horario del vet)
         // ---------------------------------------------------------------
-        Permission::create([
+        Permission::firstOrCreate([
             "guard_name" => $guard,
             "name" => "register_schedule",
         ]);
-        Permission::create(["guard_name" => $guard, "name" => "list_schedule"]);
-        Permission::create(["guard_name" => $guard, "name" => "edit_schedule"]);
-        Permission::create([
+        Permission::firstOrCreate(["guard_name" => $guard, "name" => "list_schedule"]);
+        Permission::firstOrCreate(["guard_name" => $guard, "name" => "edit_schedule"]);
+        Permission::firstOrCreate([
             "guard_name" => $guard,
             "name" => "delete_schedule",
         ]);
@@ -75,23 +75,23 @@ class PermissionsDemoSeeder extends Seeder
         // ---------------------------------------------------------------
         // OWNERS (duenos de mascotas)
         // ---------------------------------------------------------------
-        Permission::create([
+        Permission::firstOrCreate([
             "guard_name" => $guard,
             "name" => "register_owner",
         ]);
-        Permission::create(["guard_name" => $guard, "name" => "list_owner"]);
-        Permission::create(["guard_name" => $guard, "name" => "edit_owner"]);
-        Permission::create(["guard_name" => $guard, "name" => "delete_owner"]);
+        Permission::firstOrCreate(["guard_name" => $guard, "name" => "list_owner"]);
+        Permission::firstOrCreate(["guard_name" => $guard, "name" => "edit_owner"]);
+        Permission::firstOrCreate(["guard_name" => $guard, "name" => "delete_owner"]);
 
         // ---------------------------------------------------------------
         // PACIENTES (mascotas) + species/breeds
         // ---------------------------------------------------------------
-        Permission::create(["guard_name" => $guard, "name" => "register_pet"]);
-        Permission::create(["guard_name" => $guard, "name" => "list_pet"]);
-        Permission::create(["guard_name" => $guard, "name" => "edit_pet"]);
-        Permission::create(["guard_name" => $guard, "name" => "delete_pet"]);
-        Permission::create(["guard_name" => $guard, "name" => "profile_pet"]);
-        Permission::create([
+        Permission::firstOrCreate(["guard_name" => $guard, "name" => "register_pet"]);
+        Permission::firstOrCreate(["guard_name" => $guard, "name" => "list_pet"]);
+        Permission::firstOrCreate(["guard_name" => $guard, "name" => "edit_pet"]);
+        Permission::firstOrCreate(["guard_name" => $guard, "name" => "delete_pet"]);
+        Permission::firstOrCreate(["guard_name" => $guard, "name" => "profile_pet"]);
+        Permission::firstOrCreate([
             "guard_name" => $guard,
             "name" => "manage_species_breeds",
         ]);
@@ -99,34 +99,34 @@ class PermissionsDemoSeeder extends Seeder
         // ---------------------------------------------------------------
         // CITAS (appointments)
         // ---------------------------------------------------------------
-        Permission::create([
+        Permission::firstOrCreate([
             "guard_name" => $guard,
             "name" => "register_appointment",
         ]);
-        Permission::create([
+        Permission::firstOrCreate([
             "guard_name" => $guard,
             "name" => "list_appointment",
         ]);
-        Permission::create([
+        Permission::firstOrCreate([
             "guard_name" => $guard,
             "name" => "edit_appointment",
         ]);
-        Permission::create([
+        Permission::firstOrCreate([
             "guard_name" => $guard,
             "name" => "delete_appointment",
         ]);
-        Permission::create(["guard_name" => $guard, "name" => "calendar"]);
+        Permission::firstOrCreate(["guard_name" => $guard, "name" => "calendar"]);
 
         // ---------------------------------------------------------------
         // SERVICES (catalogo de servicios/precios)
         // ---------------------------------------------------------------
-        Permission::create([
+        Permission::firstOrCreate([
             "guard_name" => $guard,
             "name" => "register_service",
         ]);
-        Permission::create(["guard_name" => $guard, "name" => "list_service"]);
-        Permission::create(["guard_name" => $guard, "name" => "edit_service"]);
-        Permission::create([
+        Permission::firstOrCreate(["guard_name" => $guard, "name" => "list_service"]);
+        Permission::firstOrCreate(["guard_name" => $guard, "name" => "edit_service"]);
+        Permission::firstOrCreate([
             "guard_name" => $guard,
             "name" => "delete_service",
         ]);
@@ -134,19 +134,19 @@ class PermissionsDemoSeeder extends Seeder
         // ---------------------------------------------------------------
         // VACUNAS (vaccine_types + vacunas)
         // ---------------------------------------------------------------
-        Permission::create([
+        Permission::firstOrCreate([
             "guard_name" => $guard,
             "name" => "register_vaccination",
         ]);
-        Permission::create([
+        Permission::firstOrCreate([
             "guard_name" => $guard,
             "name" => "list_vaccination",
         ]);
-        Permission::create([
+        Permission::firstOrCreate([
             "guard_name" => $guard,
             "name" => "edit_vaccination",
         ]);
-        Permission::create([
+        Permission::firstOrCreate([
             "guard_name" => $guard,
             "name" => "delete_vaccination",
         ]);
@@ -154,13 +154,13 @@ class PermissionsDemoSeeder extends Seeder
         // ---------------------------------------------------------------
         // SURGIERE (cirugias)
         // ---------------------------------------------------------------
-        Permission::create([
+        Permission::firstOrCreate([
             "guard_name" => $guard,
             "name" => "register_surgery",
         ]);
-        Permission::create(["guard_name" => $guard, "name" => "list_surgery"]);
-        Permission::create(["guard_name" => $guard, "name" => "edit_surgery"]);
-        Permission::create([
+        Permission::firstOrCreate(["guard_name" => $guard, "name" => "list_surgery"]);
+        Permission::firstOrCreate(["guard_name" => $guard, "name" => "edit_surgery"]);
+        Permission::firstOrCreate([
             "guard_name" => $guard,
             "name" => "delete_surgery",
         ]);
@@ -168,23 +168,23 @@ class PermissionsDemoSeeder extends Seeder
         // ---------------------------------------------------------------
         // HISTORIAL MEDICO (medical_record, attachments, vital_signs, prescriptions)
         // ---------------------------------------------------------------
-        Permission::create([
+        Permission::firstOrCreate([
             "guard_name" => $guard,
             "name" => "show_medical_records",
         ]);
-        Permission::create([
+        Permission::firstOrCreate([
             "guard_name" => $guard,
             "name" => "edit_medical_records",
         ]);
-        Permission::create([
+        Permission::firstOrCreate([
             "guard_name" => $guard,
             "name" => "manage_prescriptions",
         ]);
-        Permission::create([
+        Permission::firstOrCreate([
             "guard_name" => $guard,
             "name" => "manage_vital_signs",
         ]);
-        Permission::create([
+        Permission::firstOrCreate([
             "guard_name" => $guard,
             "name" => "manage_attachments",
         ]);
@@ -192,13 +192,13 @@ class PermissionsDemoSeeder extends Seeder
         // ---------------------------------------------------------------
         // MEDICINES (inventario/farmacia)
         // ---------------------------------------------------------------
-        Permission::create([
+        Permission::firstOrCreate([
             "guard_name" => $guard,
             "name" => "register_medicine",
         ]);
-        Permission::create(["guard_name" => $guard, "name" => "list_medicine"]);
-        Permission::create(["guard_name" => $guard, "name" => "edit_medicine"]);
-        Permission::create([
+        Permission::firstOrCreate(["guard_name" => $guard, "name" => "list_medicine"]);
+        Permission::firstOrCreate(["guard_name" => $guard, "name" => "edit_medicine"]);
+        Permission::firstOrCreate([
             "guard_name" => $guard,
             "name" => "delete_medicine",
         ]);
@@ -206,19 +206,19 @@ class PermissionsDemoSeeder extends Seeder
         // ---------------------------------------------------------------
         // INVOICES + PAYMENTS (facturacion)
         // ---------------------------------------------------------------
-        Permission::create(["guard_name" => $guard, "name" => "show_invoice"]);
-        Permission::create(["guard_name" => $guard, "name" => "edit_invoice"]);
-        Permission::create(["guard_name" => $guard, "name" => "show_payment"]);
-        Permission::create([
+        Permission::firstOrCreate(["guard_name" => $guard, "name" => "show_invoice"]);
+        Permission::firstOrCreate(["guard_name" => $guard, "name" => "edit_invoice"]);
+        Permission::firstOrCreate(["guard_name" => $guard, "name" => "show_payment"]);
+        Permission::firstOrCreate([
             "guard_name" => $guard,
             "name" => "register_payment",
         ]);
-        Permission::create(["guard_name" => $guard, "name" => "edit_payment"]);
+        Permission::firstOrCreate(["guard_name" => $guard, "name" => "edit_payment"]);
 
         // ---------------------------------------------------------------
         // REMINDERS (recordatorios)
         // ---------------------------------------------------------------
-        Permission::create([
+        Permission::firstOrCreate([
             "guard_name" => $guard,
             "name" => "manage_reminders",
         ]);
@@ -226,7 +226,7 @@ class PermissionsDemoSeeder extends Seeder
         // ---------------------------------------------------------------
         // REPORTES
         // ---------------------------------------------------------------
-        Permission::create([
+        Permission::firstOrCreate([
             "guard_name" => $guard,
             "name" => "show_report_grafics",
         ]);
@@ -236,13 +236,13 @@ class PermissionsDemoSeeder extends Seeder
         // =================================================================
 
         // Super-Admin: obtiene TODOS los permisos via Gate::before (AuthServiceProvider)
-        $superAdmin = Role::create([
+        $superAdmin = Role::firstOrCreate([
             "guard_name" => $guard,
             "name" => "Super-Admin",
         ]);
 
         // Veterinario: solo lo clinico, no gestiona staff/roles/facturacion completa
-        $veterinario = Role::create([
+        $veterinario = Role::firstOrCreate([
             "guard_name" => $guard,
             "name" => "Veterinario",
         ]);
@@ -269,7 +269,7 @@ class PermissionsDemoSeeder extends Seeder
         ]);
 
         // Recepcionista: agenda, pacientes, duenos, pagos basicos - sin acceso clinico
-        $recepcionista = Role::create([
+        $recepcionista = Role::firstOrCreate([
             "guard_name" => $guard,
             "name" => "Recepcionista",
         ]);
@@ -291,11 +291,13 @@ class PermissionsDemoSeeder extends Seeder
         ]);
 
         // Usuario administrador de prueba
-        $admin = User::factory()->create([
-            "username" => "admin",
-            "email" => "admin@gmail.com",
-            "password" => bcrypt("12345678"),
-        ]);
+        $admin = User::updateOrCreate(
+            ["username" => "admin"],
+            [
+                "email" => "admin@gmail.com",
+                "password" => bcrypt("12345678"),
+            ],
+        );
         $admin->assignRole($superAdmin);
     }
 }

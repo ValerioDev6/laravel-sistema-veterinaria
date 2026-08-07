@@ -1,6 +1,58 @@
 (function () {
     "use strict";
 
+    // ------------------------------------------------------------------
+    // Helpers de validación de formulario (inline, sin depender de js/helpers/)
+    // ------------------------------------------------------------------
+    window.pintarErroresValidacion = function (errors, formId) {
+        const form = document.getElementById(formId);
+        if (!form) return;
+
+        limpiarErroresValidacion(formId);
+
+        Object.entries(errors || {}).forEach(([field, mensajes]) => {
+            const input = form.querySelector(`[name="${field}"]`);
+            if (!input) return;
+
+            input.classList.add("is-invalid");
+            const feedback = input
+                .closest(".mb-3")
+                ?.querySelector(".invalid-feedback");
+            if (feedback) {
+                feedback.textContent = Array.isArray(mensajes)
+                    ? mensajes.join(", ")
+                    : String(mensajes);
+            }
+        });
+    };
+
+    function limpiarErroresValidacion(formId) {
+        const form = document.getElementById(formId);
+        if (!form) return;
+
+        form.querySelectorAll(".is-invalid").forEach((el) =>
+            el.classList.remove("is-invalid"),
+        );
+        form.querySelectorAll(".invalid-feedback").forEach((el) => {
+            el.textContent = "";
+        });
+    }
+
+    function recolectarDatos(form) {
+        const datos = new FormData();
+        const veterinarian_id = form.elements["veterinarian_id"];
+        if (veterinarian_id) datos.append("veterinarian_id", veterinarian_id.value.trim());
+        const day_of_week = form.elements["day_of_week"];
+        if (day_of_week) datos.append("day_of_week", day_of_week.value.trim());
+        const start_time = form.elements["start_time"];
+        if (start_time) datos.append("start_time", start_time.value.trim());
+        const end_time = form.elements["end_time"];
+        if (end_time) datos.append("end_time", end_time.value.trim());
+        const is_active = form.elements["is_active"];
+        if (is_active && is_active.checked) datos.append("is_active", is_active.value);
+        return datos;
+    }
+
     const tableEl = document.getElementById("table-schedules");
     if (tableEl) {
         let dataTable = null;
@@ -119,11 +171,9 @@
         formCrear.addEventListener("submit", (e) => {
             e.preventDefault();
             limpiarErroresValidacion("formCrearSchedule");
+            const datos = recolectarDatos(formCrear);
             btn.disabled = true;
-            ajax.post(
-                "/admin/veterinarian-schedules",
-                serializarFormulario("formCrearSchedule"),
-            )
+            ajax.post("/admin/veterinarian-schedules", datos)
                 .then((res) => {
                     Swal.fire("Listo", res.message, "success").then(() => {
                         window.location.href = "/admin/veterinarian-schedules";
@@ -149,10 +199,11 @@
         formEditar.addEventListener("submit", (e) => {
             e.preventDefault();
             limpiarErroresValidacion("formEditarSchedule");
+            const datos = recolectarDatos(formEditar);
             btn.disabled = true;
             ajax.put(
                 "/admin/veterinarian-schedules/" + formEditar.dataset.id,
-                serializarFormulario("formEditarSchedule"),
+                datos,
             )
                 .then((res) => {
                     Swal.fire("Listo", res.message, "success").then(() => {

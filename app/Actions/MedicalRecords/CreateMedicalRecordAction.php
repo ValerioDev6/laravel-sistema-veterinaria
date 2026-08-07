@@ -9,31 +9,39 @@ use Illuminate\Support\Facades\DB;
 
 class CreateMedicalRecordAction
 {
-    public function execute(array $data): MedicalRecord
+    public static function execute(array $data = []): MedicalRecord
     {
         return DB::transaction(function () use ($data) {
-            $prescriptions = $data["prescriptions"] ?? [];
-            $vitalSigns = $data["vital_signs"] ?? [];
-            unset($data["prescriptions"], $data["vital_signs"]);
+            $prescriptions = data_get($data, "prescriptions", []);
+            $vitalSigns = data_get($data, "vital_signs", []);
 
-            $record = MedicalRecord::create($data);
+            $record = MedicalRecord::create([
+                "pet_id" => data_get($data, "pet_id"),
+                "veterinarian_id" => data_get($data, "veterinarian_id"),
+                "cita_id" => data_get($data, "cita_id"),
+                "vaccination_id" => data_get($data, "vaccination_id"),
+                "surgery_id" => data_get($data, "surgery_id"),
+                "event_type" => data_get($data, "event_type"),
+                "event_date" => data_get($data, "event_date"),
+                "notes" => data_get($data, "notes"),
+            ]);
 
             foreach ($prescriptions as $prescription) {
                 Prescription::create([
                     "medical_record_id" => $record->id,
-                    "medicine_id" => $prescription["medicine_id"],
-                    "dosage" => $prescription["dosage"],
-                    "duration_days" => $prescription["duration_days"] ?? null,
+                    "medicine_id" => data_get($prescription, "medicine_id"),
+                    "dosage" => data_get($prescription, "dosage"),
+                    "duration_days" => data_get($prescription, "duration_days"),
                 ]);
             }
 
             if (!empty($vitalSigns) && array_filter($vitalSigns)) {
                 VitalSign::create([
-                    "pet_id" => $data["pet_id"],
+                    "pet_id" => data_get($data, "pet_id"),
                     "medical_record_id" => $record->id,
-                    "weight" => $vitalSigns["weight"] ?? null,
-                    "temperature" => $vitalSigns["temperature"] ?? null,
-                    "heart_rate" => $vitalSigns["heart_rate"] ?? null,
+                    "weight" => data_get($vitalSigns, "weight"),
+                    "temperature" => data_get($vitalSigns, "temperature"),
+                    "heart_rate" => data_get($vitalSigns, "heart_rate"),
                     "recorded_at" => now(),
                 ]);
             }

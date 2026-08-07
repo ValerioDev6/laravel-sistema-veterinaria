@@ -1,6 +1,64 @@
 (function () {
     "use strict";
 
+    // ------------------------------------------------------------------
+    // Helpers de validación de formulario (inline, sin depender de js/helpers/)
+    // ------------------------------------------------------------------
+    window.pintarErroresValidacion = function (errors, formId) {
+        const form = document.getElementById(formId);
+        if (!form) return;
+
+        limpiarErroresValidacion(formId);
+
+        Object.entries(errors || {}).forEach(([field, mensajes]) => {
+            const input = form.querySelector(`[name="${field}"]`);
+            if (!input) return;
+
+            input.classList.add("is-invalid");
+            const feedback = input
+                .closest(".mb-3")
+                ?.querySelector(".invalid-feedback");
+            if (feedback) {
+                feedback.textContent = Array.isArray(mensajes)
+                    ? mensajes.join(", ")
+                    : String(mensajes);
+            }
+        });
+    };
+
+    function limpiarErroresValidacion(formId) {
+        const form = document.getElementById(formId);
+        if (!form) return;
+
+        form.querySelectorAll(".is-invalid").forEach((el) =>
+            el.classList.remove("is-invalid"),
+        );
+        form.querySelectorAll(".invalid-feedback").forEach((el) => {
+            el.textContent = "";
+        });
+    }
+
+    function recolectarDatos(form) {
+        const datos = new FormData();
+        const pet_id = form.elements["pet_id"];
+        if (pet_id) datos.append("pet_id", pet_id.value.trim());
+        const cita_id = form.elements["cita_id"];
+        if (cita_id) datos.append("cita_id", cita_id.value.trim());
+        const veterinarian_id = form.elements["veterinarian_id"];
+        if (veterinarian_id) datos.append("veterinarian_id", veterinarian_id.value.trim());
+        const surgery_date = form.elements["surgery_date"];
+        if (surgery_date) datos.append("surgery_date", surgery_date.value.trim());
+        const surgery_type = form.elements["surgery_type"];
+        if (surgery_type) datos.append("surgery_type", surgery_type.value.trim());
+        const outcome = form.elements["outcome"];
+        if (outcome) datos.append("outcome", outcome.value.trim());
+        const medical_notes = form.elements["medical_notes"];
+        if (medical_notes) datos.append("medical_notes", medical_notes.value.trim());
+        const status = form.elements["status"];
+        if (status) datos.append("status", status.value.trim());
+        return datos;
+    }
+
     const tableEl = document.getElementById("table-cirugias");
     if (tableEl) {
         let dataTable = null;
@@ -191,7 +249,7 @@
             e.preventDefault();
             limpiarErroresValidacion("formCrearCirugia");
             btn.disabled = true;
-            ajax.post("/admin/cirugias", serializarFormulario("formCrearCirugia"))
+            ajax.post("/admin/cirugias", recolectarDatos(formCrear))
                 .then((res) => {
                     Swal.fire("Listo", res.message, "success").then(() => {
                         window.location.href = "/admin/cirugias";
@@ -217,7 +275,7 @@
             btn.disabled = true;
             ajax.put(
                 "/admin/cirugias/" + formEditar.dataset.id,
-                serializarFormulario("formEditarCirugia"),
+                recolectarDatos(formEditar),
             )
                 .then((res) => {
                     Swal.fire("Listo", res.message, "success").then(() => {

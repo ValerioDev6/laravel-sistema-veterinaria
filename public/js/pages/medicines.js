@@ -1,6 +1,54 @@
 (function () {
     "use strict";
 
+    // ------------------------------------------------------------------
+    // Helpers de validación de formulario (inline, sin depender de js/helpers/)
+    // ------------------------------------------------------------------
+    window.pintarErroresValidacion = function (errors, formId) {
+        const form = document.getElementById(formId);
+        if (!form) return;
+
+        limpiarErroresValidacion(formId);
+
+        Object.entries(errors || {}).forEach(([field, mensajes]) => {
+            const input = form.querySelector(`[name="${field}"]`);
+            if (!input) return;
+
+            input.classList.add("is-invalid");
+            const feedback = input
+                .closest(".mb-3")
+                ?.querySelector(".invalid-feedback");
+            if (feedback) {
+                feedback.textContent = Array.isArray(mensajes)
+                    ? mensajes.join(", ")
+                    : String(mensajes);
+            }
+        });
+    };
+
+    function limpiarErroresValidacion(formId) {
+        const form = document.getElementById(formId);
+        if (!form) return;
+
+        form.querySelectorAll(".is-invalid").forEach((el) =>
+            el.classList.remove("is-invalid"),
+        );
+        form.querySelectorAll(".invalid-feedback").forEach((el) => {
+            el.textContent = "";
+        });
+    }
+
+    function recolectarDatos(form) {
+        const datos = new FormData();
+        const name = form.elements["name"];
+        if (name) datos.append("name", name.value.trim());
+        const quantity = form.elements["quantity"];
+        if (quantity) datos.append("quantity", quantity.value.trim());
+        const unit_cost = form.elements["unit_cost"];
+        if (unit_cost) datos.append("unit_cost", unit_cost.value.trim());
+        return datos;
+    }
+
     const tableEl = document.getElementById("table-medicines");
     if (tableEl) {
         let dataTable = null;
@@ -122,11 +170,9 @@
         formCrear.addEventListener("submit", (e) => {
             e.preventDefault();
             limpiarErroresValidacion("formCrearMedicine");
+            const datos = recolectarDatos(formCrear);
             btn.disabled = true;
-            ajax.post(
-                "/admin/medicines",
-                serializarFormulario("formCrearMedicine"),
-            )
+            ajax.post("/admin/medicines", datos)
                 .then((res) => {
                     Swal.fire("Listo", res.message, "success").then(() => {
                         window.location.href = "/admin/medicines";
@@ -150,13 +196,14 @@
     if (formEditar) {
         const btn = document.getElementById("btnActualizarMedicine");
         formEditar.addEventListener("submit", (e) => {
-            e.preventDefault();
-            limpiarErroresValidacion("formEditarMedicine");
-            btn.disabled = true;
-            ajax.put(
-                "/admin/medicines/" + formEditar.dataset.id,
-                serializarFormulario("formEditarMedicine"),
-            )
+e.preventDefault();
+        limpiarErroresValidacion("formEditarMedicine");
+        const datos = recolectarDatos(formEditar);
+        btn.disabled = true;
+        ajax.put(
+            "/admin/medicines/" + formEditar.dataset.id,
+            datos,
+        )
                 .then((res) => {
                     Swal.fire("Listo", res.message, "success").then(() => {
                         window.location.href = "/admin/medicines";

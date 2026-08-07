@@ -38,9 +38,8 @@ class CirugiaController extends Controller
 
     public function store(
         StoreCirugiaRequest $request,
-        CreateCirugiaAction $action,
     ): JsonResponse {
-        $cirugia = $action->execute($request->validated());
+        $cirugia = CreateCirugiaAction::execute($request->validated());
 
         return response()->json(
             [
@@ -58,9 +57,8 @@ class CirugiaController extends Controller
     public function update(
         UpdateCirugiaRequest $request,
         Surgiere $cirugia,
-        UpdateCirugiaAction $action,
     ): JsonResponse {
-        $cirugia = $action->execute($cirugia, $request->validated());
+        $cirugia = UpdateCirugiaAction::execute($cirugia, $request->validated());
 
         return response()->json([
             "status" => true,

@@ -6,9 +6,11 @@ use App\Models\Species;
 
 class UpdateSpeciesAction
 {
-    public function execute(Species $species, array $data): Species
+    public static function execute(Species $species, array $data = []): Species
     {
-        $species->update($data);
+        $species->update([
+            "name" => data_get($data, "name"),
+        ]);
 
         return $species->fresh();
     }

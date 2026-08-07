@@ -334,3 +334,118 @@ Audita `app/Http/Controllers/Api/Admin/**` completo. Para cada `index()` que ten
 **Resultado:** Creados los Filters genéricos `App\Filters\Shared\FiltrarPorBusqueda` y `App\Filters\Shared\OrdenarPor` (configurables por constructor) y `App\Filters\Pagos\FiltrarPorEstado`. Creadas 16 `List{Modulo}Action` (Pipeline nativo + Filters + `->paginate()`). Refactorizados los 16 `index()` de `Api/Admin/*`. Nota de Pipeline: los Filters se pasan como instancias (`new FiltrarPorX($request)`) para usar el `$request` explícito de la Action. Envelope intacto; JS sin cambios. Limpiado `Admin/MedicalRecordController@index` (lógica muerta). Verificado por tinker: Breed `species_id=1`→8, Cita `status=pendiente`→5, Invoice `pagado`→2, Payment `pagado`→6; Branch `per_page=2`→2/3, `search=Lima`→3, `sort desc`→"Sede San Isidro"; HTTP `branches` y `owners` → 200. `php -l` OK; tests: 20 fallos preexistentes e independientes (Auth/Profile, DB de test sin migrar).
 
 ---
+
+## Prompt #9 — 2026-08-06
+
+**Tipo:** Consolidación de UI — módulo Pacientes con tabs, sin vistas duplicadas
+
+**Contexto del proyecto:** Sistema de gestión veterinaria en Laravel Blade + Bootstrap 5 + DataTables 1.13 (server-side vía AJAX) + SweetAlert2 + jQuery. Layout x-app-layout con sidebar y breadcrumbs. Ya existen vistas funcionales para "Especies" y "Razas" (listado + alta/edición vía SweetAlert2 o modal), cada una con su propio JS en `js/pages/species.js` y `js/pages/breeds.js`.
+
+**Objetivo:** Consolidar el módulo "Pacientes" en un único index con tabs (nav-tabs de Bootstrap), SIN crear vistas Blade nuevas y duplicadas. Reutilizar las vistas existentes de Especies y Razas como partials/includes dentro de un tab, minimizando archivos Blade nuevos.
+
+### Estructura esperada en `admin/pacientes/index.blade.php`
+
+1. **Tabs de nivel módulo (Bootstrap nav-tabs):**
+   - Tab "Listado" (activo por defecto): la tabla actual de pacientes.
+   - Tab "Especies y Razas": debe INCLUIR el contenido ya existente de las vistas de especies y razas (`@include('admin.species.partials.table')` y `@include('admin.breeds.partials.table')`, o refactorizar el contenido actual en partials si aún no lo están), mostrando ambas tablas lado a lado (o apiladas en mobile) dentro del mismo tab-pane.
+
+2. **No duplicar lógica JS:**
+   - `js/pages/species.js` y `js/pages/breeds.js` deben seguir funcionando igual dentro del tab (mismos selectores `#table-species` / `#table-breeds`), sin reescribir su lógica AJAX/DataTable.
+   - Cargarlos vía `@push('scripts')` en el index de pacientes.
+   - Si las tablas usan DataTables, inicializarlas solo cuando el tab se activa (evento `shown.bs.tab` de Bootstrap) para evitar problemas de renderizado con tablas ocultas por `display:none`.
+
+3. **Rutas:**
+   - Mantener las rutas existentes `admin.species.*` y `admin.breeds.*` intactas (para los endpoints AJAX de listar/crear/editar/eliminar).
+   - Quitar del sidebar el bloque "Especies y Razas" (`#sidebarSpecies`) ya que ahora vive dentro de Pacientes.
+
+4. **Alta/edición:**
+   - Mantener el mismo patrón ya usado (SweetAlert2 o modal) para crear/editar tanto Especie como Raza, sin cambios de comportamiento, solo cambia el lugar donde se muestra (dentro del tab en vez de vista independiente).
+
+5. **Estilo:**
+   - Usar el patrón nav-tabs / nav-link ya presente en el sistema de diseño (Bootstrap 5 estándar, iconos `ri-*`), consistente con el resto del template.
+
+### Entregable esperado
+
+- `admin/pacientes/index.blade.php` actualizado con nav-tabs "Listado" / "Especies y Razas".
+- Los partials de species/breeds extraídos (si no existían) para poder incluirlos sin duplicar HTML.
+- Ajuste del sidebar quitando el ítem "Especies y Razas".
+
+**Al terminar:** registra este prompt en `prompts.md` como el siguiente número correlativo.
+
+**Resultado:** Creados `resources/views/admin/species/partials/table.blade.php` y `resources/views/admin/breeds/partials/table.blade.php` (card + `#table-species` / `#table-breeds`), e `index` de Especies y Razas refactorizados a `@include` del partial (siguen funcionando como vistas independientes; rutas `admin.species.*` / `admin.breeds.*` intactas). `admin/pacientes/index.blade.php` ahora tiene nav-tabs "Listado" (tabla de pacientes, activo) y "Especies y Razas" (ambas tablas lado a lado, `col-lg-6` / apiladas en mobile) con `@push('scripts')` de `pacientes.js`, `species.js` y `breeds.js`. En `species.js`/`breeds.js` se añadió `inicializarCuandoVisible()`: si la tabla está en un `tab-pane` inactivo, la DataTable se inicializa en el primer `shown.bs.tab` (sin tocar la lógica AJAX/DataTable, solo difiriendo la primera inicialización). Removido del sidebar el bloque "Especies y Razas" (`#sidebarSpecies`). Verificado: `view:cache` OK, `node --check` OK en los 3 JS, rutas de Especies/Razas intactas.
+
+---
+
+## Prompt #10 — 2026-08-07
+
+**Tipo:** Corrección de UI — tab "Especies y Razas" SOLO con formularios de creación (sin listado/tablas)
+
+**Contexto:** En la vista de Pacientes (index), el tab "Especies y Razas" mostraba tablas/DataTable de Especies y Razas. Se elimina por completo esa idea: el tab debe mostrar ÚNICAMENTE los formularios de creación.
+
+**Requerimiento:**
+1. **Nueva Especie:** campo `nombre` → botón "Guardar" → POST a `admin.species.store` vía AJAX. Al guardar: SweetAlert2 de éxito, limpia el form y refresca en memoria (AJAX, sin recargar) el `<select>` "Especie" que usa el form de Nueva Mascota y el propio form de Nueva Raza.
+2. **Nueva Raza:** campos `nombre` y `<select>` "Especie" (poblado desde la misma fuente `$species` del form de Paciente, sin duplicar la fuente de datos). Botón "Guardar" → POST a `admin.breeds.store` vía AJAX. Al guardar: SweetAlert2 + limpia el form.
+3. **Layout:** dos cards lado a lado (apiladas en mobile), sin tabla debajo, sin botón "Ver listado". Estilo consistente (`form-control`, `btn-primary`, `invalid-feedback`).
+4. **SE ELIMINA:** cualquier DataTable de especies/razas, botón "+ Nueva Especie" modal, y cualquier link/redirección a `admin.species.index` / `admin.breeds.index`.
+5. Las vistas Blade de listado independientes ya no se usan (sidebar limpio); las rutas store se mantienen; los index de esos módulos quedan sin uso en el frontend pero no se borran del backend.
+
+**Entregable:** `admin/pacientes/index.blade.php` con el tab mostrando solo los 2 formularios; JS (`species-breeds-inline.js` o similar) con el submit AJAX de ambos forms; confirmación explícita de que no quedó tabla ni link de listado.
+
+**Resultado:** En `admin/pacientes/index.blade.php` el pane `#tabEspeciesRazas` ahora contiene solo dos cards (col-lg-6, apilables en mobile) con los formularios "Nueva Especie" (`#formNuevaEspecie` → POST `/api/admin/species`) y "Nueva Raza" (`#formNuevaRaza` → POST `/api/admin/breeds`), estilo estándar (`form-control`, `btn-primary`, `invalid-feedback`), sin tabla ni link de listado. El `<select>` "Especie" de Nueva Raza se puebla server-side desde `$species` (misma fuente del form de Nueva Mascota). Creado `public/js/pages/species-breeds-inline.js` con el submit AJAX de ambos forms (SweetAlert + reset + limpieza de validación) y `refrescarSelectsEspecie()` que recarga `GET /api/admin/species` y actualiza todos los `select[name="species_id"]` del DOM conservando la selección. `PacienteController@index` ahora pasa `"species" => $this->species()`. Se quitan del `@push('scripts')` de pacientes `species.js`/`breeds.js` (se mantienen para sus páginas independientes) y se eliminan los `@include` de los partials de tabla del tab. Sin redirección tras guardar. Verificado: `php -l` OK, `view:cache` OK, `node --check` OK. Confirmación: no quedó ninguna tabla/DataTable ni link de listado en el tab.
+
+---
+
+## Prompt #11 — 2026-08-07
+
+**Tipo:** Rediseño profesional del módulo Pacientes (UI + imágenes libres por especie)
+
+**Contexto del proyecto:** Sistema de gestión veterinaria en Laravel Blade + Bootstrap 5 + DataTables 1.13 (server-side vía AJAX) + SweetAlert2 + jQuery. El usuario pidió mejorar la UI del módulo `resources/views/admin/pacientes/` usando la skill `frontend-design`, que las especies y razas queden **separadas** (no dos CRUDs apretados en un mismo pane), y que se agreguen **imágenes gratis** para las especies.
+
+**Requerimiento:**
+1. Rediseñar profesionalmente el index de Pacientes: hero con identidad de clínica, tarjetas de estadísticas (pacientes, especies, razas), y **tabs separados** para "Pacientes", "Especies" y "Razas".
+2. Cada tab de catálogo con su propia card: cabecera con título + contador, formulario de creación inline (`formNuevaEspecie`/`formNuevaRaza`, AJAX a `/api/admin/species` y `/api/admin/breeds`) y su DataTable (reutilizando `species.js`/`breeds.js`/`pacientes.js` existentes).
+3. **Imágenes libres (stock) por especie:** cada especie y raza muestra una foto gratuita (Pexels) según su nombre, con fallback a icono.
+4. Consistencia con el sistema (Bootstrap 5, `form-control`, SweetAlert2, validación inline `invalid-feedback`).
+5. Las páginas independientes `admin/species/index.blade.php` y `admin/breeds/index.blade.php` siguen existiendo y funcionando (con sus DataTables), solo que ya no se enlazan desde el sidebar.
+
+**Entregable:** `admin/pacientes/index.blade.php` rediseñado; helper de imágenes `public/js/helpers/species-images.js`; ajustes en `species.js`/`breeds.js` (columna Foto + hook de recarga); actualización de partials y controller (`$totales`); verificación de compilación.
+
+**Resultado:** `admin/pacientes/index.blade.php` rediseñado por completo: hero degradado verde con acento dorado (identidad de clínica, tipografías Fraunces + Manrope), franja de 3 tarjetas de estadísticas (Mascotas/Especies/Razas desde `$totales`), y **3 tabs separados** — "Pacientes" (DataTable con foto de mascota), "Especies" (card: form inline `#formNuevaEspecie` + tabla `#table-species` con columna Foto) y "Razas" (card: form inline `#formNuevaRaza` + tabla `#table-breeds` con columna Foto). Creado `public/js/helpers/species-images.js` con `URLFotoEspecie()`/`fotoEspecie()`: mapeo de nombres de especie → foto gratuita de Pexels (verificado por HTTP: perro 1108099, gato 2061057, ave 1148820, conejo 326012, pez 128756, caballo 1904105, reptil 2600409, tortuga 8005020, roedor 175709, erizo 7030663) con `onerror` a icono paw. `species.js` y `breeds.js` agregan columna de foto y exponen `recargarEspecies()`/`recargarRazas()`; `species-breeds-inline.js` recarga la tabla y los selects tras guardar. `PacienteController@index` pasa `$totales` (Paciente::count, Species::count, Breed::count). Partials y páginas standalone de Especies/Razas actualizados (columna Foto + helper cargado). Verificado: `php -l` OK, `view:cache` OK, `node --check` OK en los 5 JS, `tinker` renderiza la vista OK (`VIEW_RENDER_OK`).
+
+---
+
+## Prompt #12 — 2026-08-07 (corrección de UI — revert de exceso)
+
+**Tipo:** Revert de UI a Velzon puro. Solo formularios de creación de Especie/Raza (sin listado, sin CSS custom, sin stats, sin fotos stock).
+
+**Contexto:** El Prompt #11 pintó el index de Pacientes con tema verde custom (fonts Fraunces/Manrope), hero, stats y 3 tabs con DataTables de Especies/Razas con fotos de Pexels. El usuario lo marcó como **basura"**: el proyecto usa la plantilla **Velzon** y, según `proyecto-veterinaria.md`/`project-map.md`, no se debe desviar del estilo Velzon (CSS custom solo excepcional). Pide: **solo UI, no borrar nada de backend**; **quitar el listado de especies/razas sin borr0 nada**; dejar **solo los formularios de creación**, agregando una **"imagen tipo"** (emoji/icono) si hay espacio en el form de la nueva especie; **no stats** de totales en esa card; **no fotos** en las tablas.
+
+**Acciones:**
+1. `admin/pacientes/index.blade.php` → estilo **Velzon** limpio (`page-title-box`, `nav-tabs nav-tabs-custom`, cards estándar, `btn btn-primary`), sin CSS custom/fuentes ajenas. Dos tabs:
+   - **Listado**: DataTable de pacientes (`#table-pacientes`).
+   - **Especies y Razas**: solo dos cards de formulario (`col-lg-6`) — `#formNuevaEspecie` y `#formNuevaRaza` — con **emoji "tipo"** (🐾/🐶) en el header y `input-group` con iconos `ri-*`. Sin tabla debajo.
+- `PacienteController@index`: eliminado `$totales` y el import `Breed` (mi adición previa, ya no se usa; se conserva `species` para el select del form de Raza). No se quita funcionalidad.
+- `species.js`/`breeds.js`: revertidas las columnas de foto (vuelta a columnas simples) y eliminados `window.recargarEspecies`/`recargarRazas`. Las páginas standalone de Especies/Razas siguen con su DataTable normal.
+- Partials de las tablas de Especies/Razas: revertida la cabecera (sin columna Foto).
+- `species/index.blade.php` y `breeds/index.blade.php`: retirado el `@archivo js/helpers/species-images.js` (el archivo queda en disco sin uso; no se borra).
+- `species-breeds-inline.js`: sin cambios; los guards `typeof window.recargar...` evitan errores al no existir ya los hooks.
+
+**Verificado:** `php -l` OK, `view:cache` OK, `node --check` OK en los 4 JS; `tinker` confirma que la vista tiene `#table-pacientes` + `#formNuevaEspecie`, y NO tiene `#table-species`/`#table-breeds`, ni `pv-module` (css verde), ni `totales`. No se elimina nada de backend.
+
+---
+
+## Prompt #13 — 2026-08-07
+
+**Tipo:** Reorganización del index de Pacientes en 4 tabs separados + mejora de formularios (validación required, Limpiar/Regresar, autolimpieza tras guardar)
+
+**Contexto:** El usuario pidió un index con 4 tabs, en orden: **Buscar Paciente**, **Formulario Raza**, **Formulario Especie**, **Formulario Paciente** (solo eso, sin listados de especies/razas). Además pidió en los formularios de los tabs: validación tradicional (campos required en rojo), limpia automática tras guardar, y botón **Regresar** (y **Limpiar**) además de **Guardar**.
+
+**Cambios:**
+1. `admin/pacientes/index.blade.php`: 4 tabs en el orden pedido (`#tabBusquedaPaciente`, `#tabFormRazas`, `#tabFormEspecie`, `#tabFormPaciente`, activo = Buscar Paciente). Tab "Buscar Paciente" = listado con buscador (`#busquedaPaciente`). Formularios de Raza y Especie con campo ID (disabled, "Auto", nota "se genera automáticamente"), campos `required`, alerta de obligatorios y botones **Guardar / Limpiar (reset) / Regresar** (`data-bs-toggle="tab"` a `#tabBusquedaPaciente`).
+2. `admin/pacientes/partials/form-create.blade.php`: formulario de paciente sin `novalidate` (validación nativa de required) con **Guardar + Limpiar + Regresar** (Regresar paramétrico por `@include`). `create.blade.php` lo incluye con `regresarUrl = route('admin.pacientes.index')`.
+3. `public/js/pages/pacientes.js`: `initForm` detecta si el form está en un `.tab-pane` → tras guardar muestra Swal y **resetea el form** (sin redirigir); en create independiente sigue redirigiendo a `/admin/pacientes`. Añadido handler `reset` que limpia validación. Expuesto `buscarPacientes()` + canjeo del input `#busquedaPaciente` con `dataTable.search()`.
+4. `public/js/pages/species-breeds-inline.js`: handlers `reset` que limpian validación de ambos forms inline.
+
+**Verificado:** `php -l` OK, `view:cache` OK, `node --check` OK (pacientes.js, species-breeds-inline.js); `tinker` confirma 4 tabs en orden correcto, botones Regresar/Limpiar presentes, sin `novalidate`, `required` presente, sin tablas de especies/razas; `create.blade.php` OK (Regresar → `/admin/pacientes`). Backend sin cambios funcionales (solo se agregó `owners` a la vista index para el formulario inline).
+
+---

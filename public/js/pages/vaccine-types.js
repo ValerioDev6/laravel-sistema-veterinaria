@@ -1,6 +1,52 @@
 (function () {
     "use strict";
 
+    // ------------------------------------------------------------------
+    // Helpers de validación de formulario (inline, sin depender de js/helpers/)
+    // ------------------------------------------------------------------
+    window.pintarErroresValidacion = function (errors, formId) {
+        const form = document.getElementById(formId);
+        if (!form) return;
+
+        limpiarErroresValidacion(formId);
+
+        Object.entries(errors || {}).forEach(([field, mensajes]) => {
+            const input = form.querySelector(`[name="${field}"]`);
+            if (!input) return;
+
+            input.classList.add("is-invalid");
+            const feedback = input
+                .closest(".mb-3")
+                ?.querySelector(".invalid-feedback");
+            if (feedback) {
+                feedback.textContent = Array.isArray(mensajes)
+                    ? mensajes.join(", ")
+                    : String(mensajes);
+            }
+        });
+    };
+
+    function limpiarErroresValidacion(formId) {
+        const form = document.getElementById(formId);
+        if (!form) return;
+
+        form.querySelectorAll(".is-invalid").forEach((el) =>
+            el.classList.remove("is-invalid"),
+        );
+        form.querySelectorAll(".invalid-feedback").forEach((el) => {
+            el.textContent = "";
+        });
+    }
+
+    function recolectarDatos(form) {
+        const datos = new FormData();
+        const name = form.elements["name"];
+        if (name) datos.append("name", name.value.trim());
+        const species_id = form.elements["species_id"];
+        if (species_id) datos.append("species_id", species_id.value.trim());
+        return datos;
+    }
+
     const tableEl = document.getElementById("table-vaccine-types");
     if (tableEl) {
         let dataTable = null;
@@ -119,11 +165,9 @@
         formCrear.addEventListener("submit", (e) => {
             e.preventDefault();
             limpiarErroresValidacion("formCrearVaccineType");
+            const datos = recolectarDatos(formCrear);
             btn.disabled = true;
-            ajax.post(
-                "/admin/vaccine-types",
-                serializarFormulario("formCrearVaccineType"),
-            )
+            ajax.post("/admin/vaccine-types", datos)
                 .then((res) => {
                     Swal.fire("Listo", res.message, "success").then(() => {
                         window.location.href = "/admin/vaccine-types";
@@ -149,10 +193,11 @@
         formEditar.addEventListener("submit", (e) => {
             e.preventDefault();
             limpiarErroresValidacion("formEditarVaccineType");
+            const datos = recolectarDatos(formEditar);
             btn.disabled = true;
             ajax.put(
                 "/admin/vaccine-types/" + formEditar.dataset.id,
-                serializarFormulario("formEditarVaccineType"),
+                datos,
             )
                 .then((res) => {
                     Swal.fire("Listo", res.message, "success").then(() => {

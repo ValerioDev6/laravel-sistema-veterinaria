@@ -35,9 +35,8 @@ class MedicineController extends Controller
 
     public function store(
         StoreMedicineRequest $request,
-        CreateMedicineAction $action
     ): JsonResponse {
-        $medicine = $action->execute($request->validated());
+        $medicine = CreateMedicineAction::execute($request->validated());
 
         return response()->json([
             "status" => true,
@@ -50,9 +49,8 @@ class MedicineController extends Controller
     public function update(
         UpdateMedicineRequest $request,
         Medicine $medicine,
-        UpdateMedicineAction $action
     ): JsonResponse {
-        $medicine = $action->execute($medicine, $request->validated());
+        $medicine = UpdateMedicineAction::execute($medicine, $request->validated());
 
         return response()->json([
             "status" => true,

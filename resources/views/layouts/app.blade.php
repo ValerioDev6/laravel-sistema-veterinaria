@@ -287,23 +287,6 @@
                                 <span data-key="t-medicines">Medicamentos</span>
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link menu-link" href="#sidebarSpecies" data-bs-toggle="collapse"
-                                role="button" aria-expanded="false" aria-controls="sidebarSpecies">
-                                <i class="ri-leaf-line"></i>
-                                <span data-key="t-species">Especies y Razas</span>
-                            </a>
-                            <div class="collapse menu-dropdown" id="sidebarSpecies">
-                                <ul class="nav nav-sm flex-column">
-                                    <li class="nav-item">
-                                        <a href="{{ route('admin.species.index') }}" class="nav-link" data-key="t-species-list">Especies</a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a href="{{ route('admin.breeds.index') }}" class="nav-link" data-key="t-breeds-list">Razas</a>
-                                    </li>
-                                </ul>
-                            </div>
-                        </li>
 
                         <li class="menu-title">
                             <span data-key="t-config">Configuración</span>
@@ -379,8 +362,6 @@
 
     <!-- Capa AJAX propia del proyecto -->
     <script src="{{ asset('js/config/ajax.js') }}"></script>
-    <!-- Helpers JS de formulario -->
-    <script src="{{ asset('js/helpers/form-helpers.js') }}"></script>
 
     @stack('scripts')
 </body>

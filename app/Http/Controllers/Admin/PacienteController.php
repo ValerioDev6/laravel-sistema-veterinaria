@@ -12,7 +12,11 @@ class PacienteController extends Controller
 {
     public function index(): View
     {
-        return view("admin.pacientes.index", ["title" => "Pacientes"]);
+        return view("admin.pacientes.index", [
+            "title" => "Pacientes",
+            "owners" => $this->owners(),
+            "species" => $this->species(),
+        ]);
     }
 
     public function create(): View

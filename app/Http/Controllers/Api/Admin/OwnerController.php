@@ -35,9 +35,8 @@ class OwnerController extends Controller
 
     public function store(
         StoreOwnerRequest $request,
-        CreateOwnerAction $action
     ): JsonResponse {
-        $owner = $action->execute($request->validated());
+        $owner = CreateOwnerAction::execute($request->validated());
 
         return response()->json([
             "status" => true,
@@ -50,9 +49,8 @@ class OwnerController extends Controller
     public function update(
         UpdateOwnerRequest $request,
         Owner $owner,
-        UpdateOwnerAction $action
     ): JsonResponse {
-        $owner = $action->execute($owner, $request->validated());
+        $owner = UpdateOwnerAction::execute($owner, $request->validated());
 
         return response()->json([
             "status" => true,

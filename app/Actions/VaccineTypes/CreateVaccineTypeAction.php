@@ -6,8 +6,11 @@ use App\Models\VaccineType;
 
 class CreateVaccineTypeAction
 {
-    public function execute(array $data): VaccineType
+    public static function execute(array $data = []): VaccineType
     {
-        return VaccineType::create($data);
+        return VaccineType::create([
+            "name" => data_get($data, "name"),
+            "species_id" => data_get($data, "species_id"),
+        ]);
     }
 }

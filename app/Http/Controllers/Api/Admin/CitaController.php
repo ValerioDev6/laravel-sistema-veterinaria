@@ -39,9 +39,8 @@ class CitaController extends Controller
 
     public function store(
         StoreCitaRequest $request,
-        CreateCitaAction $action,
     ): JsonResponse {
-        $cita = $action->execute($request->validated());
+        $cita = CreateCitaAction::execute($request->validated());
 
         return response()->json(
             [
@@ -59,9 +58,8 @@ class CitaController extends Controller
     public function update(
         UpdateCitaRequest $request,
         Cita $cita,
-        UpdateCitaAction $action,
     ): JsonResponse {
-        $cita = $action->execute($cita, $request->validated());
+        $cita = UpdateCitaAction::execute($cita, $request->validated());
 
         return response()->json([
             "status" => true,

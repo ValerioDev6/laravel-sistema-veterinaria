@@ -7,20 +7,29 @@ use App\Support\ImageUploader;
 
 class CreatePacienteAction
 {
-    public function execute(array $data): Paciente
+    public static function execute(array $data = []): Paciente
     {
-        $upload = null;
-        if (!empty($data["photo"]) && $data["photo"]->isValid()) {
-            $upload = ImageUploader::upload($data["photo"], "pacientes");
+        $datos = [
+            "owner_id" => data_get($data, "owner_id"),
+            "species_id" => data_get($data, "species_id"),
+            "breed_id" => data_get($data, "breed_id"),
+            "name" => data_get($data, "name"),
+            "birth_date" => data_get($data, "birth_date"),
+            "gender" => data_get($data, "gender"),
+            "color" => data_get($data, "color"),
+            "weight" => data_get($data, "weight"),
+            "medical_notes" => data_get($data, "medical_notes"),
+        ];
+
+        $foto = data_get($data, "photo");
+        if (!empty($foto) && $foto->isValid()) {
+            $subida = ImageUploader::upload($foto, "pacientes");
+            if ($subida) {
+                $datos["photo"] = $subida["url"];
+                $datos["photo_public_id"] = $subida["public_id"] ?? null;
+            }
         }
 
-        if ($upload) {
-            $data["photo"] = $upload["url"];
-            $data["photo_public_id"] = $upload["public_id"] ?? null;
-        } else {
-            unset($data["photo"]);
-        }
-
-        return Paciente::create($data);
+        return Paciente::create($datos);
     }
 }

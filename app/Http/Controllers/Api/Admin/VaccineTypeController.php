@@ -35,9 +35,8 @@ class VaccineTypeController extends Controller
 
     public function store(
         StoreVaccineTypeRequest $request,
-        CreateVaccineTypeAction $action
     ): JsonResponse {
-        $vaccineType = $action->execute($request->validated());
+        $vaccineType = CreateVaccineTypeAction::execute($request->validated());
 
         return response()->json([
             "status" => true,
@@ -50,9 +49,8 @@ class VaccineTypeController extends Controller
     public function update(
         UpdateVaccineTypeRequest $request,
         VaccineType $vaccineType,
-        UpdateVaccineTypeAction $action
     ): JsonResponse {
-        $vaccineType = $action->execute($vaccineType, $request->validated());
+        $vaccineType = UpdateVaccineTypeAction::execute($vaccineType, $request->validated());
 
         return response()->json([
             "status" => true,

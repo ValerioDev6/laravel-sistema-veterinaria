@@ -18,7 +18,7 @@ class BreedController extends Controller
 {
     public function index(
         Request $request,
-        ListBreedsAction $action
+        ListBreedsAction $action,
     ): JsonResponse {
         $paginated = $action->execute($request);
 
@@ -30,31 +30,32 @@ class BreedController extends Controller
                 "per_page" => $paginated->perPage(),
                 "current_page" => $paginated->currentPage(),
                 "last_page" => $paginated->lastPage(),
-                "has_more" => $paginated->currentPage() < $paginated->lastPage(),
+                "has_more" =>
+                    $paginated->currentPage() < $paginated->lastPage(),
             ],
         ]);
     }
 
-    public function store(
-        StoreBreedRequest $request,
-        CreateBreedAction $action
-    ): JsonResponse {
-        $breed = $action->execute($request->validated());
+    public function store(StoreBreedRequest $request): JsonResponse
+    {
+        $breed = CreateBreedAction::execute($request->validated());
 
-        return response()->json([
-            "status" => true,
-            "message" => "Raza creada correctamente",
-            "data" => new BreedResource($breed->load("species")),
-            "errors" => (object) [],
-        ], 201);
+        return response()->json(
+            [
+                "status" => true,
+                "message" => "Raza creada correctamente",
+                "data" => new BreedResource($breed->load("species")),
+                "errors" => (object) [],
+            ],
+            201,
+        );
     }
 
     public function update(
         UpdateBreedRequest $request,
         Breed $breed,
-        UpdateBreedAction $action
     ): JsonResponse {
-        $breed = $action->execute($breed, $request->validated());
+        $breed = UpdateBreedAction::execute($breed, $request->validated());
 
         return response()->json([
             "status" => true,
@@ -66,7 +67,7 @@ class BreedController extends Controller
 
     public function destroy(
         Breed $breed,
-        DeleteBreedAction $action
+        DeleteBreedAction $action,
     ): JsonResponse {
         $action->execute($breed);
 

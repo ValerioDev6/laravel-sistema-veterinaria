@@ -6,9 +6,13 @@ use App\Models\Medicine;
 
 class UpdateMedicineAction
 {
-    public function execute(Medicine $medicine, array $data): Medicine
+    public static function execute(Medicine $medicine, array $data = []): Medicine
     {
-        $medicine->update($data);
+        $medicine->update([
+            "name" => data_get($data, "name"),
+            "quantity" => data_get($data, "quantity"),
+            "unit_cost" => data_get($data, "unit_cost"),
+        ]);
 
         return $medicine->fresh();
     }

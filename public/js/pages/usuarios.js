@@ -1,6 +1,70 @@
 (function () {
     "use strict";
 
+    // ------------------------------------------------------------------
+    // Helpers de validación de formulario (inline, sin depender de js/helpers/)
+    // ------------------------------------------------------------------
+    window.pintarErroresValidacion = function (errors, formId) {
+        const form = document.getElementById(formId);
+        if (!form) return;
+
+        limpiarErroresValidacion(formId);
+
+        Object.entries(errors || {}).forEach(([field, mensajes]) => {
+            const input = form.querySelector(`[name="${field}"]`);
+            if (!input) return;
+
+            input.classList.add("is-invalid");
+            const feedback = input
+                .closest(".mb-3")
+                ?.querySelector(".invalid-feedback");
+            if (feedback) {
+                feedback.textContent = Array.isArray(mensajes)
+                    ? mensajes.join(", ")
+                    : String(mensajes);
+            }
+        });
+    };
+
+    function limpiarErroresValidacion(formId) {
+        const form = document.getElementById(formId);
+        if (!form) return;
+
+        form.querySelectorAll(".is-invalid").forEach((el) =>
+            el.classList.remove("is-invalid"),
+        );
+        form.querySelectorAll(".invalid-feedback").forEach((el) => {
+            el.textContent = "";
+        });
+    }
+
+    function recolectarDatos(form) {
+        const datos = new FormData();
+        const username = form.elements["username"];
+        if (username) datos.append("username", username.value.trim());
+        const email = form.elements["email"];
+        if (email) datos.append("email", email.value.trim());
+        const password = form.elements["password"];
+        if (password) datos.append("password", password.value);
+        const password_confirmation = form.elements["password_confirmation"];
+        if (password_confirmation) datos.append("password_confirmation", password_confirmation.value);
+        const role = form.elements["role"];
+        if (role) datos.append("role", role.value.trim());
+        const branch_id = form.elements["branch_id"];
+        if (branch_id) datos.append("branch_id", branch_id.value.trim());
+        const phone = form.elements["phone"];
+        if (phone) datos.append("phone", phone.value.trim());
+        const type_documento = form.elements["type_documento"];
+        if (type_documento) datos.append("type_documento", type_documento.value.trim());
+        const n_documento = form.elements["n_documento"];
+        if (n_documento) datos.append("n_documento", n_documento.value.trim());
+        const birthday = form.elements["birthday"];
+        if (birthday) datos.append("birthday", birthday.value.trim());
+        const avatar = form.elements["avatar"];
+        if (avatar && avatar.files && avatar.files.length) datos.append("avatar", avatar.files[0]);
+        return datos;
+    }
+
     const tableEl = document.getElementById("table-usuarios");
     if (tableEl) {
         let dataTable = null;
@@ -167,11 +231,12 @@
         formCrear.addEventListener("submit", (e) => {
             e.preventDefault();
             limpiarErroresValidacion("formCrearUsuario");
+            const datos = recolectarDatos(formCrear);
             btn.disabled = true;
 
             ajax.post(
                 "/admin/users",
-                serializarFormData("formCrearUsuario"),
+                datos,
             )
                 .then((res) => {
                     Swal.fire("Listo", res.message, "success").then(() => {
@@ -199,11 +264,12 @@
         formEditar.addEventListener("submit", (e) => {
             e.preventDefault();
             limpiarErroresValidacion("formEditarUsuario");
+            const datos = recolectarDatos(formEditar);
             btn.disabled = true;
 
             ajax.put(
                 "/admin/users/" + formEditar.dataset.id,
-                serializarFormData("formEditarUsuario"),
+                datos,
             )
                 .then((res) => {
                     Swal.fire("Listo", res.message, "success").then(() => {

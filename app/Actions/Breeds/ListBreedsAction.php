@@ -15,14 +15,14 @@ class ListBreedsAction
     public function execute(Request $request): LengthAwarePaginator
     {
         $query = app(Pipeline::class)
-            ->send(Breed::query()->with('species'))
+            ->send(Breed::query()->with("species"))
             ->through([
                 new FiltrarPorSpecies($request),
-                new FiltrarPorBusqueda($request, ['name']),
-                new OrdenarPor($request, [0 => 'id', 1 => 'name'], [1, 'asc']),
+                new FiltrarPorBusqueda($request, ["name"]),
+                new OrdenarPor($request, [0 => "id", 1 => "name"], [1, "asc"]),
             ])
             ->thenReturn();
 
-        return $query->paginate($request->integer('per_page', 15));
+        return $query->paginate($request->integer("per_page", 15));
     }
 }

@@ -36,9 +36,8 @@ class UserController extends Controller
 
     public function store(
         StoreUserRequest $request,
-        CreateUserAction $action
     ): JsonResponse {
-        $user = $action->execute($request->validated());
+        $user = CreateUserAction::execute($request->validated());
 
         return response()->json([
             "status" => true,
@@ -51,9 +50,8 @@ class UserController extends Controller
     public function update(
         UpdateUserRequest $request,
         User $user,
-        UpdateUserAction $action
     ): JsonResponse {
-        $user = $action->execute($user, $request->validated());
+        $user = UpdateUserAction::execute($user, $request->validated());
 
         return response()->json([
             "status" => true,

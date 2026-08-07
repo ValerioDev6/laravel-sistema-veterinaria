@@ -35,9 +35,8 @@ class ServiceController extends Controller
 
     public function store(
         StoreServiceRequest $request,
-        CreateServiceAction $action
     ): JsonResponse {
-        $service = $action->execute($request->validated());
+        $service = CreateServiceAction::execute($request->validated());
 
         return response()->json([
             "status" => true,
@@ -50,9 +49,8 @@ class ServiceController extends Controller
     public function update(
         UpdateServiceRequest $request,
         Service $service,
-        UpdateServiceAction $action
     ): JsonResponse {
-        $service = $action->execute($service, $request->validated());
+        $service = UpdateServiceAction::execute($service, $request->validated());
 
         return response()->json([
             "status" => true,

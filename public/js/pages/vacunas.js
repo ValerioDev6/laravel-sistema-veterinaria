@@ -1,6 +1,60 @@
 (function () {
     "use strict";
 
+    // ------------------------------------------------------------------
+    // Helpers de validación de formulario (inline, sin depender de js/helpers/)
+    // ------------------------------------------------------------------
+    window.pintarErroresValidacion = function (errors, formId) {
+        const form = document.getElementById(formId);
+        if (!form) return;
+
+        limpiarErroresValidacion(formId);
+
+        Object.entries(errors || {}).forEach(([field, mensajes]) => {
+            const input = form.querySelector(`[name="${field}"]`);
+            if (!input) return;
+
+            input.classList.add("is-invalid");
+            const feedback = input
+                .closest(".mb-3")
+                ?.querySelector(".invalid-feedback");
+            if (feedback) {
+                feedback.textContent = Array.isArray(mensajes)
+                    ? mensajes.join(", ")
+                    : String(mensajes);
+            }
+        });
+    };
+
+    function limpiarErroresValidacion(formId) {
+        const form = document.getElementById(formId);
+        if (!form) return;
+
+        form.querySelectorAll(".is-invalid").forEach((el) =>
+            el.classList.remove("is-invalid"),
+        );
+        form.querySelectorAll(".invalid-feedback").forEach((el) => {
+            el.textContent = "";
+        });
+    }
+
+    function recolectarDatos(form) {
+        const datos = new FormData();
+        const pet_id = form.elements["pet_id"];
+        if (pet_id) datos.append("pet_id", pet_id.value.trim());
+        const vaccine_type_id = form.elements["vaccine_type_id"];
+        if (vaccine_type_id) datos.append("vaccine_type_id", vaccine_type_id.value.trim());
+        const veterinarian_id = form.elements["veterinarian_id"];
+        if (veterinarian_id) datos.append("veterinarian_id", veterinarian_id.value.trim());
+        const vaccination_date = form.elements["vaccination_date"];
+        if (vaccination_date) datos.append("vaccination_date", vaccination_date.value.trim());
+        const next_due_date = form.elements["next_due_date"];
+        if (next_due_date) datos.append("next_due_date", next_due_date.value.trim());
+        const cita_id = form.elements["cita_id"];
+        if (cita_id) datos.append("cita_id", cita_id.value.trim());
+        return datos;
+    }
+
     const tableEl = document.getElementById("table-vacunas");
     if (tableEl) {
         let dataTable = null;
@@ -130,7 +184,7 @@
             e.preventDefault();
             limpiarErroresValidacion("formCrearVacuna");
             btn.disabled = true;
-            ajax.post("/admin/vacunas", serializarFormulario("formCrearVacuna"))
+            ajax.post("/admin/vacunas", recolectarDatos(formCrear))
                 .then((res) => {
                     Swal.fire("Listo", res.message, "success").then(() => {
                         window.location.href = "/admin/vacunas";
@@ -156,7 +210,7 @@
             btn.disabled = true;
             ajax.put(
                 "/admin/vacunas/" + formEditar.dataset.id,
-                serializarFormulario("formEditarVacuna"),
+                recolectarDatos(formEditar),
             )
                 .then((res) => {
                     Swal.fire("Listo", res.message, "success").then(() => {

@@ -1,9 +1,72 @@
 (function () {
     "use strict";
 
+    // ------------------------------------------------------------------
+    // Helpers de validación de formulario (inline, sin depender de js/helpers/)
+    // ------------------------------------------------------------------
+    window.pintarErroresValidacion = function (errors, formId) {
+        const form = document.getElementById(formId);
+        if (!form) return;
+
+        limpiarErroresValidacion(formId);
+
+        Object.entries(errors || {}).forEach(([field, mensajes]) => {
+            const input = form.querySelector(`[name="${field}"]`);
+            if (!input) return;
+
+            input.classList.add("is-invalid");
+            const feedback = input
+                .closest(".mb-3")
+                ?.querySelector(".invalid-feedback");
+            if (feedback) {
+                feedback.textContent = Array.isArray(mensajes)
+                    ? mensajes.join(", ")
+                    : String(mensajes);
+            }
+        });
+    };
+
+    function limpiarErroresValidacion(formId) {
+        const form = document.getElementById(formId);
+        if (!form) return;
+
+        form.querySelectorAll(".is-invalid").forEach((el) =>
+            el.classList.remove("is-invalid"),
+        );
+        form.querySelectorAll(".invalid-feedback").forEach((el) => {
+            el.textContent = "";
+        });
+    }
+
+    function recolectarDatos(form) {
+        const datos = new FormData();
+        const nombre = form.elements["name"];
+        if (nombre) datos.append("name", nombre.value.trim());
+        return datos;
+    }
+
+    // ------------------------------------------------------------------
+    // Página: index (tabla + modal)
+    // ------------------------------------------------------------------
     const tableEl = document.getElementById("table-species");
+    const modalEl = document.getElementById("modalSpecies");
+    const formModal = document.getElementById("formModalSpecies");
+    const modalInstance = modalEl ? new bootstrap.Modal(modalEl) : null;
+    let dataTable = null;
+
+    function abrirModalEdicion(id, name) {
+        const title = document.getElementById("modalSpeciesTitle");
+        const campoId = document.getElementById("modal-species-id");
+        const campoNombre = document.getElementById("modal-species-nombre");
+        if (title) title.textContent = "Editar Especie";
+        if (campoId) campoId.value = id;
+        if (campoNombre) campoNombre.value = name;
+        limpiarErroresValidacion("formModalSpecies");
+        if (modalInstance) modalInstance.show();
+    }
+
     if (tableEl) {
-        let dataTable = null;
+        let terminoBusqueda = "";
 
         function cargarDatos() {
             const url = "/admin/species";
@@ -13,13 +76,16 @@
                     serverSide: true,
                     processing: true,
                     pageLength: 15,
+                    searching: false,
+                    lengthChange: false,
+                    info: false,
                     ajax: function (data, callback) {
                         const params = {
                             per_page: data.length,
                             page: Math.floor(data.start / data.length) + 1,
                         };
-                        if (data.search && data.search.value) {
-                            params.search = data.search.value;
+                        if (terminoBusqueda) {
+                            params.search = terminoBusqueda;
                         }
                         if (data.order && data.order.length) {
                             params.sort_by = data.order[0].column;
@@ -30,7 +96,11 @@
                                 draw: data.draw,
                                 recordsTotal: res.pagination.total,
                                 recordsFiltered: res.pagination.total,
-                                data: res.data,
+                                data: res.data.map((specie) => ({
+                                    id: specie.id,
+                                    name: specie.name,
+                                    acciones: renderAcciones(specie),
+                                })),
                             });
                         });
                     },
@@ -40,17 +110,11 @@
                     columns: [
                         { data: "id" },
                         { data: "name" },
-                        {
-                            data: null,
-                            orderable: false,
-                            render: function (data) {
-                                return renderAcciones(data);
-                            },
-                        },
+                        { data: "acciones", orderable: false },
                     ],
                     order: [[0, "asc"]],
                     drawCallback: function () {
-                        bindHandlers();
+                        renderHandlers();
                     },
                 });
             } else {
@@ -59,29 +123,46 @@
             return dataTable;
         }
 
-        function renderAcciones(data) {
+        function renderAcciones(specie) {
+            const editar = modalInstance
+                ? '<button type="button" class="btn btn-soft-primary btn-sm me-1 btn-editar-species" data-id="' +
+                  specie.id +
+                  '" data-name="' +
+                  specie.name +
+                  '" title="Editar"><i class="ri-pencil-line"></i></button>'
+                : '<a href="' +
+                  specie.edit_url +
+                  '" class="btn btn-soft-primary btn-sm me-1" title="Editar">' +
+                  '<i class="ri-pencil-line"></i></a>';
             return (
-                '<a href="' +
-                data.edit_url +
-                '" class="btn btn-soft-primary btn-sm me-1" title="Editar">' +
-                '<i class="ri-pencil-line"></i></a>' +
+                editar +
                 '<button type="button" class="btn btn-soft-danger btn-sm btn-eliminar-species" data-id="' +
-                data.id +
+                specie.id +
                 '" title="Eliminar"><i class="ri-delete-bin-line"></i></button>'
             );
         }
 
-        function bindHandlers() {
+        function renderHandlers() {
+            document
+                .querySelectorAll(".btn-editar-species")
+                .forEach((btn) => {
+                    btn.addEventListener("click", function () {
+                        abrirModalEdicion(
+                            this.dataset.id,
+                            this.dataset.name,
+                        );
+                    });
+                });
             document
                 .querySelectorAll(".btn-eliminar-species")
                 .forEach((btn) => {
                     btn.addEventListener("click", function () {
-                        eliminar(parseInt(this.dataset.id, 10));
+                        eliminarEspecie(parseInt(this.dataset.id, 10));
                     });
                 });
         }
 
-        function eliminar(id) {
+        function eliminarEspecie(id) {
             Swal.fire({
                 icon: "warning",
                 title: "¿Eliminar especie?",
@@ -110,9 +191,90 @@
             });
         }
 
-        cargarDatos();
+        const inputBusqueda = document.getElementById("busquedaEspecie");
+        if (inputBusqueda) {
+            let temporizador = null;
+            inputBusqueda.addEventListener("input", function () {
+                const termino = inputBusqueda.value;
+                clearTimeout(temporizador);
+                temporizador = setTimeout(function () {
+                    terminoBusqueda = termino.trim();
+                    dataTable.ajax.reload();
+                }, 350);
+            });
+        }
+
+        // Solo inicializar la tabla cuando la pestaña esté visible
+        const contenedor = tableEl.closest(".tab-pane");
+        if (!contenedor || contenedor.classList.contains("active")) {
+            cargarDatos();
+        } else {
+            const pestana = document.querySelector(
+                '[data-bs-toggle="tab"][data-bs-target="#' +
+                    contenedor.id +
+                    '"]',
+            );
+            if (pestana) {
+                pestana.addEventListener(
+                    "shown.bs.tab",
+                    function handler() {
+                        cargarDatos();
+                        pestana.removeEventListener("shown.bs.tab", handler);
+                    },
+                );
+            } else {
+                cargarDatos();
+            }
+        }
     }
 
+    // ------------------------------------------------------------------
+    // Modal de crear / editar
+    // ------------------------------------------------------------------
+    if (formModal && modalEl) {
+        const btn = document.getElementById("btnModalSpeciesGuardar");
+
+        formModal.addEventListener("submit", (e) => {
+            e.preventDefault();
+            limpiarErroresValidacion("formModalSpecies");
+
+            const id = document.getElementById("modal-species-id").value;
+            btn.disabled = true;
+            const datos = recolectarDatos(formModal);
+            delete datos.id;
+            const peticion = id
+                ? ajax.put("/admin/species/" + id, datos)
+                : ajax.post("/admin/species", datos);
+
+            peticion
+                .then((res) => {
+                    Swal.fire("Listo", res.message, "success");
+                    modalInstance.hide();
+                    if (dataTable) dataTable.ajax.reload();
+                })
+                .catch((error) => {
+                    if (error.status === 422) {
+                        pintarErroresValidacion(
+                            error.response.errors,
+                            "formModalSpecies",
+                        );
+                    }
+                })
+                .finally(() => {
+                    btn.disabled = false;
+                });
+        });
+
+        modalEl.addEventListener("hidden.bs.modal", function () {
+            const titulo = document.getElementById("modalSpeciesTitle");
+            if (titulo) titulo.textContent = "Nueva Especie";
+            formModal.reset();
+        });
+    }
+
+    // ------------------------------------------------------------------
+    // Páginas standalone: crear / editar
+    // ------------------------------------------------------------------
     const formCrear = document.getElementById("formCrearSpecies");
     if (formCrear) {
         const btn = document.getElementById("btnGuardarSpecies");
@@ -120,7 +282,10 @@
             e.preventDefault();
             limpiarErroresValidacion("formCrearSpecies");
             btn.disabled = true;
-            ajax.post("/admin/species", serializarFormulario("formCrearSpecies"))
+            ajax.post(
+                "/admin/species",
+                recolectarDatos(formCrear),
+            )
                 .then((res) => {
                     Swal.fire("Listo", res.message, "success").then(() => {
                         window.location.href = "/admin/species";
@@ -149,7 +314,7 @@
             btn.disabled = true;
             ajax.put(
                 "/admin/species/" + formEditar.dataset.id,
-                serializarFormulario("formEditarSpecies"),
+                recolectarDatos(formEditar),
             )
                 .then((res) => {
                     Swal.fire("Listo", res.message, "success").then(() => {

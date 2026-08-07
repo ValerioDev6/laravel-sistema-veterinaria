@@ -36,10 +36,9 @@ class PacienteController extends Controller
     }
 
     public function store(
-        StorePacienteRequest $request,
-        CreatePacienteAction $action
+        StorePacienteRequest $request
     ): JsonResponse {
-        $paciente = $action->execute($request->validated());
+        $paciente = CreatePacienteAction::execute($request->validated());
 
         return response()->json([
             "status" => true,
@@ -51,10 +50,9 @@ class PacienteController extends Controller
 
     public function update(
         UpdatePacienteRequest $request,
-        Paciente $paciente,
-        UpdatePacienteAction $action
+        Paciente $paciente
     ): JsonResponse {
-        $paciente = $action->execute($paciente, $request->validated());
+        $paciente = UpdatePacienteAction::execute($paciente, $request->validated());
 
         return response()->json([
             "status" => true,

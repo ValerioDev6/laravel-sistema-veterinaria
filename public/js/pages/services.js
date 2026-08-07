@@ -1,6 +1,58 @@
 (function () {
     "use strict";
 
+    // ------------------------------------------------------------------
+    // Helpers de validación de formulario (inline, sin depender de js/helpers/)
+    // ------------------------------------------------------------------
+    window.pintarErroresValidacion = function (errors, formId) {
+        const form = document.getElementById(formId);
+        if (!form) return;
+
+        limpiarErroresValidacion(formId);
+
+        Object.entries(errors || {}).forEach(([field, mensajes]) => {
+            const input = form.querySelector(`[name="${field}"]`);
+            if (!input) return;
+
+            input.classList.add("is-invalid");
+            const feedback = input
+                .closest(".mb-3")
+                ?.querySelector(".invalid-feedback");
+            if (feedback) {
+                feedback.textContent = Array.isArray(mensajes)
+                    ? mensajes.join(", ")
+                    : String(mensajes);
+            }
+        });
+    };
+
+    function limpiarErroresValidacion(formId) {
+        const form = document.getElementById(formId);
+        if (!form) return;
+
+        form.querySelectorAll(".is-invalid").forEach((el) =>
+            el.classList.remove("is-invalid"),
+        );
+        form.querySelectorAll(".invalid-feedback").forEach((el) => {
+            el.textContent = "";
+        });
+    }
+
+    function recolectarDatos(form) {
+        const datos = new FormData();
+        const name = form.elements["name"];
+        if (name) datos.append("name", name.value.trim());
+        const category = form.elements["category"];
+        if (category) datos.append("category", category.value.trim());
+        const base_price = form.elements["base_price"];
+        if (base_price) datos.append("base_price", base_price.value.trim());
+        const duration_minutes = form.elements["duration_minutes"];
+        if (duration_minutes) datos.append("duration_minutes", duration_minutes.value.trim());
+        const description = form.elements["description"];
+        if (description) datos.append("description", description.value.trim());
+        return datos;
+    }
+
     const tableEl = document.getElementById("table-services");
     if (tableEl) {
         let dataTable = null;
@@ -130,7 +182,8 @@
             e.preventDefault();
             limpiarErroresValidacion("formCrearService");
             btn.disabled = true;
-            ajax.post("/admin/services", serializarFormulario("formCrearService"))
+            const datos = recolectarDatos(formCrear);
+            ajax.post("/admin/services", datos)
                 .then((res) => {
                     Swal.fire("Listo", res.message, "success").then(() => {
                         window.location.href = "/admin/services";
@@ -157,9 +210,10 @@
             e.preventDefault();
             limpiarErroresValidacion("formEditarService");
             btn.disabled = true;
+            const datos = recolectarDatos(formEditar);
             ajax.put(
                 "/admin/services/" + formEditar.dataset.id,
-                serializarFormulario("formEditarService"),
+                datos,
             )
                 .then((res) => {
                     Swal.fire("Listo", res.message, "success").then(() => {

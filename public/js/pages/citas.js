@@ -1,6 +1,73 @@
 (function () {
     "use strict";
 
+    // ------------------------------------------------------------------
+    // Helpers de validación de formulario (inline, sin depender de js/helpers/)
+    // ------------------------------------------------------------------
+    window.pintarErroresValidacion = function (errors, formId) {
+        const form = document.getElementById(formId);
+        if (!form) return;
+
+        limpiarErroresValidacion(formId);
+
+        Object.entries(errors || {}).forEach(([field, mensajes]) => {
+            const input = form.querySelector(`[name="${field}"]`);
+            if (!input) return;
+
+            input.classList.add("is-invalid");
+            const feedback = input
+                .closest(".mb-3")
+                ?.querySelector(".invalid-feedback");
+            if (feedback) {
+                feedback.textContent = Array.isArray(mensajes)
+                    ? mensajes.join(", ")
+                    : String(mensajes);
+            }
+        });
+    };
+
+    function limpiarErroresValidacion(formId) {
+        const form = document.getElementById(formId);
+        if (!form) return;
+
+        form.querySelectorAll(".is-invalid").forEach((el) =>
+            el.classList.remove("is-invalid"),
+        );
+        form.querySelectorAll(".invalid-feedback").forEach((el) => {
+            el.textContent = "";
+        });
+    }
+
+    function recolectarFiltros(form) {
+        const data = {};
+        const veterinario = form.elements["veterinarian_id"];
+        if (veterinario) data.veterinarian_id = veterinario.value.trim();
+        const fecha = form.elements["appointment_date"];
+        if (fecha) data.appointment_date = fecha.value.trim();
+        const estado = form.elements["status"];
+        if (estado) data.status = estado.value.trim();
+        return data;
+    }
+
+    function recolectarDatos(form) {
+        const datos = new FormData();
+        const pet_id = form.elements["pet_id"];
+        if (pet_id) datos.append("pet_id", pet_id.value.trim());
+        const veterinarian_id = form.elements["veterinarian_id"];
+        if (veterinarian_id) datos.append("veterinarian_id", veterinarian_id.value.trim());
+        const service_id = form.elements["service_id"];
+        if (service_id) datos.append("service_id", service_id.value.trim());
+        const appointment_date = form.elements["appointment_date"];
+        if (appointment_date) datos.append("appointment_date", appointment_date.value.trim());
+        const appointment_time = form.elements["appointment_time"];
+        if (appointment_time) datos.append("appointment_time", appointment_time.value.trim());
+        const reason = form.elements["reason"];
+        if (reason) datos.append("reason", reason.value.trim());
+        const status = form.elements["status"];
+        if (status) datos.append("status", status.value.trim());
+        return datos;
+    }
+
     const tableEl = document.getElementById("table-citas");
     if (tableEl) {
         let dataTable = null;
@@ -8,7 +75,7 @@
         function getFilters() {
             const form = document.getElementById("formFiltrosCitas");
             if (!form) return {};
-            return serializarFormulario("formFiltrosCitas") || {};
+            return recolectarFiltros(form) || {};
         }
 
         function cargarDatos() {
@@ -196,7 +263,7 @@
             e.preventDefault();
             limpiarErroresValidacion("formCrearCita");
             btn.disabled = true;
-            ajax.post("/admin/citas", serializarFormulario("formCrearCita"))
+            ajax.post("/admin/citas", recolectarDatos(formCrear))
                 .then((res) => {
                     Swal.fire("Listo", res.message, "success").then(() => {
                         window.location.href = "/admin/citas";
@@ -222,7 +289,7 @@
             btn.disabled = true;
             ajax.put(
                 "/admin/citas/" + formEditar.dataset.id,
-                serializarFormulario("formEditarCita"),
+                recolectarDatos(formEditar),
             )
                 .then((res) => {
                     Swal.fire("Listo", res.message, "success").then(() => {

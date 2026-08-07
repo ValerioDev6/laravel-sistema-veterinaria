@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "skills": {
+    "frontend-design": {
+      "source": "smithery.ai",
+      "sourceUrl": "https://smithery.ai/skills/jarredkenny/frontend-design",
+      "sourceType": "well-known",
+      "computedHash": "3033a2783a6ba7054800c7b45614fcdf44d6ab4d3c1ba53d8f6034bd92bd8016",
+      "wellKnownDigest": "sha256:10612258d1cca16a410c1abf179670e111cb2c6673552d4eae6cf97ad4aad29d"
+    },
+    "smithery-ai-cli": {
+      "source": "smithery.ai",
+      "sourceUrl": "https://smithery.ai/skills/sjnims/bootstrap-components",
+      "sourceType": "well-known",
+      "computedHash": "dc17f090c975afe1d96a25dbe843fc9c978e96d5699eed1bb7c12b411e10b830",
+      "wellKnownDigest": "sha256:8991a5cc42c323f513a29aa16ecdb53f03b10cb5f3f33ce02496832c5218bcd5"
+    }
+  }
+}

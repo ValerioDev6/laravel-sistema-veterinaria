@@ -37,9 +37,8 @@ class MedicalRecordController extends Controller
 
     public function store(
         StoreMedicalRecordRequest $request,
-        CreateMedicalRecordAction $action
     ): JsonResponse {
-        $record = $action->execute($request->validated());
+        $record = CreateMedicalRecordAction::execute($request->validated());
 
         return response()->json([
             "status" => true,
@@ -52,9 +51,8 @@ class MedicalRecordController extends Controller
     public function update(
         UpdateMedicalRecordRequest $request,
         MedicalRecord $medicalRecord,
-        UpdateMedicalRecordAction $action
     ): JsonResponse {
-        $record = $action->execute($medicalRecord, $request->validated());
+        $record = UpdateMedicalRecordAction::execute($medicalRecord, $request->validated());
 
         return response()->json([
             "status" => true,

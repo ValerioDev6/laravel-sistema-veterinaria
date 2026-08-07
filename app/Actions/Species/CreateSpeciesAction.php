@@ -6,8 +6,10 @@ use App\Models\Species;
 
 class CreateSpeciesAction
 {
-    public function execute(array $data): Species
+    public static function execute(array $data = []): Species
     {
-        return Species::create($data);
+        return Species::create([
+            "name" => data_get($data, "name"),
+        ]);
     }
 }

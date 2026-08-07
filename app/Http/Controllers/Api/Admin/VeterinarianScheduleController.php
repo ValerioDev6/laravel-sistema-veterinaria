@@ -40,9 +40,8 @@ class VeterinarianScheduleController extends Controller
 
     public function store(
         StoreScheduleRequest $request,
-        CreateScheduleAction $action,
     ): JsonResponse {
-        $schedule = $action->execute($request->validated());
+        $schedule = CreateScheduleAction::execute($request->validated());
 
         return response()->json(
             [
@@ -60,9 +59,8 @@ class VeterinarianScheduleController extends Controller
     public function update(
         UpdateScheduleRequest $request,
         VeterinarianSchedule $veterinarianSchedule,
-        UpdateScheduleAction $action,
     ): JsonResponse {
-        $schedule = $action->execute(
+        $schedule = UpdateScheduleAction::execute(
             $veterinarianSchedule,
             $request->validated(),
         );

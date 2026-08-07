@@ -34,10 +34,9 @@ class SpeciesController extends Controller
     }
 
     public function store(
-        StoreSpeciesRequest $request,
-        CreateSpeciesAction $action
+        StoreSpeciesRequest $request
     ): JsonResponse {
-        $species = $action->execute($request->validated());
+        $species = CreateSpeciesAction::execute($request->validated());
 
         return response()->json([
             "status" => true,
@@ -49,10 +48,9 @@ class SpeciesController extends Controller
 
     public function update(
         UpdateSpeciesRequest $request,
-        Species $species,
-        UpdateSpeciesAction $action
+        Species $species
     ): JsonResponse {
-        $species = $action->execute($species, $request->validated());
+        $species = UpdateSpeciesAction::execute($species, $request->validated());
 
         return response()->json([
             "status" => true,

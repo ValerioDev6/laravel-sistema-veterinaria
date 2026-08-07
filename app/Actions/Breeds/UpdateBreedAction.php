@@ -6,9 +6,12 @@ use App\Models\Breed;
 
 class UpdateBreedAction
 {
-    public function execute(Breed $breed, array $data): Breed
+    public static function execute(Breed $breed, array $data = []): Breed
     {
-        $breed->update($data);
+        $breed->update([
+            "species_id" => data_get($data, "species_id"),
+            "name" => data_get($data, "name"),
+        ]);
 
         return $breed->fresh();
     }

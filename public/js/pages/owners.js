@@ -1,6 +1,64 @@
 (function () {
     "use strict";
 
+    // ------------------------------------------------------------------
+    // Helpers de validación de formulario (inline, sin depender de js/helpers/)
+    // ------------------------------------------------------------------
+    window.pintarErroresValidacion = function (errors, formId) {
+        const form = document.getElementById(formId);
+        if (!form) return;
+
+        limpiarErroresValidacion(formId);
+
+        Object.entries(errors || {}).forEach(([field, mensajes]) => {
+            const input = form.querySelector(`[name="${field}"]`);
+            if (!input) return;
+
+            input.classList.add("is-invalid");
+            const feedback = input
+                .closest(".mb-3")
+                ?.querySelector(".invalid-feedback");
+            if (feedback) {
+                feedback.textContent = Array.isArray(mensajes)
+                    ? mensajes.join(", ")
+                    : String(mensajes);
+            }
+        });
+    };
+
+    function limpiarErroresValidacion(formId) {
+        const form = document.getElementById(formId);
+        if (!form) return;
+
+        form.querySelectorAll(".is-invalid").forEach((el) =>
+            el.classList.remove("is-invalid"),
+        );
+        form.querySelectorAll(".invalid-feedback").forEach((el) => {
+            el.textContent = "";
+        });
+    }
+
+    function recolectarDatos(form) {
+        const datos = new FormData();
+        const first_name = form.elements["first_name"];
+        if (first_name) datos.append("first_name", first_name.value.trim());
+        const last_name = form.elements["last_name"];
+        if (last_name) datos.append("last_name", last_name.value.trim());
+        const type_documento = form.elements["type_documento"];
+        if (type_documento) datos.append("type_documento", type_documento.value.trim());
+        const n_documento = form.elements["n_documento"];
+        if (n_documento) datos.append("n_documento", n_documento.value.trim());
+        const email = form.elements["email"];
+        if (email) datos.append("email", email.value.trim());
+        const phone = form.elements["phone"];
+        if (phone) datos.append("phone", phone.value.trim());
+        const address = form.elements["address"];
+        if (address) datos.append("address", address.value.trim());
+        const city = form.elements["city"];
+        if (city) datos.append("city", city.value.trim());
+        return datos;
+    }
+
     const tableEl = document.getElementById("table-owners");
     if (tableEl) {
         let dataTable = null;
@@ -131,7 +189,8 @@
             e.preventDefault();
             limpiarErroresValidacion("formCrearOwner");
             btn.disabled = true;
-            ajax.post("/admin/owners", serializarFormulario("formCrearOwner"))
+            const datos = recolectarDatos(formCrear);
+            ajax.post("/admin/owners", datos)
                 .then((res) => {
                     Swal.fire("Listo", res.message, "success").then(() => {
                         window.location.href = "/admin/owners";
@@ -158,9 +217,10 @@
             e.preventDefault();
             limpiarErroresValidacion("formEditarOwner");
             btn.disabled = true;
+            const datos = recolectarDatos(formEditar);
             ajax.put(
                 "/admin/owners/" + formEditar.dataset.id,
-                serializarFormulario("formEditarOwner"),
+                datos,
             )
                 .then((res) => {
                     Swal.fire("Listo", res.message, "success").then(() => {

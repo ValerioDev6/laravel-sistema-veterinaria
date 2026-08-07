@@ -46,9 +46,8 @@ class BranchController extends Controller
 
     public function store(
         StoreBranchRequest $request,
-        CreateBranchAction $action,
     ): JsonResponse {
-        $branch = $action->execute($request->validated());
+        $branch = CreateBranchAction::execute($request->validated());
 
         return response()->json(
             [
@@ -64,9 +63,8 @@ class BranchController extends Controller
     public function update(
         UpdateBranchRequest $request,
         Branch $branch,
-        UpdateBranchAction $action,
     ): JsonResponse {
-        $branch = $action->execute($branch, $request->validated());
+        $branch = UpdateBranchAction::execute($branch, $request->validated());
 
         return response()->json([
             "status" => true,

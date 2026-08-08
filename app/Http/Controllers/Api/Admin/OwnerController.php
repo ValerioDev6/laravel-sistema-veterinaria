@@ -46,6 +46,16 @@ class OwnerController extends Controller
         ], 201);
     }
 
+    public function show(Owner $owner): JsonResponse
+    {
+        $owner->loadMissing("pacientes");
+
+        return response()->json([
+            "success" => true,
+            "data" => new OwnerResource($owner),
+        ]);
+    }
+
     public function update(
         UpdateOwnerRequest $request,
         Owner $owner,

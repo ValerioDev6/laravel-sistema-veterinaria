@@ -71,9 +71,9 @@
                             </form>
 
                             <div class="table-responsive">
-                                <table id="table-invoices" class="table table-hover align-middle">
+                                <table id="table-invoices" class="table table-borderless dt-responsive nowrap w-100">
                                     <thead>
-                                        <tr>
+                                        <tr style="border-bottom: 2px solid #212529;">
                                             <th>ID</th>
                                             <th>Servicio</th>
                                             <th>Posadero / Dueño</th>
@@ -107,9 +107,9 @@
                             </form>
 
                             <div class="table-responsive">
-                                <table id="table-payments" class="table table-hover align-middle">
+                                <table id="table-payments" class="table table-borderless dt-responsive nowrap w-100">
                                     <thead>
-                                        <tr>
+                                        <tr style="border-bottom: 2px solid #212529;">
                                             <th>ID</th>
                                             <th>Factura</th>
                                             <th>Dueño</th>

@@ -21,7 +21,9 @@ class OwnerResource extends JsonResource
             "type_documento" => $this->type_documento,
             "n_documento" => $this->n_documento,
             "pacientes_count" => $this->pacientes_count ?? $this->pacientes()->count(),
-            "edit_url" => route("admin.owners.edit", $this->id),
+            "pacientes" => PacienteResource::collection(
+                $this->whenLoaded("pacientes"),
+            ),
             "show_url" => route("admin.owners.show", $this->id),
         ];
     }

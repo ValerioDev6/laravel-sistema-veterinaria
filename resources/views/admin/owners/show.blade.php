@@ -53,7 +53,7 @@
                     </dl>
 
                     <div class="d-flex gap-2 mt-3">
-                        <a href="{{ route('admin.owners.edit', $owner->id) }}" class="btn btn-soft-primary btn-sm">
+                        <a href="{{ route('admin.owners.index', ['edit' => $owner->id]) }}" class="btn btn-soft-primary btn-sm">
                             <i class="ri-pencil-line me-1"></i>Editar
                         </a>
                         <a href="{{ route('admin.pacientes.create') }}" class="btn btn-primary btn-sm">

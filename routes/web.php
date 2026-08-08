@@ -130,13 +130,6 @@ Route::middleware("auth")
         Route::get("owners", [OwnerController::class, "index"])->name(
             "owners.index",
         );
-        Route::get("owners/create", [OwnerController::class, "create"])->name(
-            "owners.create",
-        );
-        Route::get("owners/{owner}/edit", [
-            OwnerController::class,
-            "edit",
-        ])->name("owners.edit");
         Route::get("owners/{owner}", [OwnerController::class, "show"])->name(
             "owners.show",
         );

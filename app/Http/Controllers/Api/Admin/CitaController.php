@@ -17,6 +17,9 @@ use Illuminate\Http\Request;
 
 class CitaController extends Controller
 {
+
+
+
     public function index(
         Request $request,
         ListCitasAction $action

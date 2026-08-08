@@ -1,9 +1,6 @@
 (function () {
     "use strict";
 
-    // ------------------------------------------------------------------
-    // Helpers de validación de formulario (inline, sin depender de js/helpers/)
-    // ------------------------------------------------------------------
     window.pintarErroresValidacion = function (errors, formId) {
         const form = document.getElementById(formId);
         if (!form) return;
@@ -16,7 +13,7 @@
 
             input.classList.add("is-invalid");
             const feedback = input
-                .closest(".mb-3")
+                .closest(".col-md-6")
                 ?.querySelector(".invalid-feedback");
             if (feedback) {
                 feedback.textContent = Array.isArray(mensajes)
@@ -38,47 +35,217 @@
         });
     }
 
-    function recolectarDatos(form) {
+    function recolectarOwnerDatos(form) {
         const datos = new FormData();
-        const first_name = form.elements["first_name"];
-        if (first_name) datos.append("first_name", first_name.value.trim());
-        const last_name = form.elements["last_name"];
-        if (last_name) datos.append("last_name", last_name.value.trim());
-        const type_documento = form.elements["type_documento"];
-        if (type_documento) datos.append("type_documento", type_documento.value.trim());
-        const n_documento = form.elements["n_documento"];
-        if (n_documento) datos.append("n_documento", n_documento.value.trim());
-        const email = form.elements["email"];
-        if (email) datos.append("email", email.value.trim());
-        const phone = form.elements["phone"];
-        if (phone) datos.append("phone", phone.value.trim());
-        const address = form.elements["address"];
-        if (address) datos.append("address", address.value.trim());
-        const city = form.elements["city"];
-        if (city) datos.append("city", city.value.trim());
+        [
+            "first_name",
+            "last_name",
+            "type_documento",
+            "n_documento",
+            "email",
+            "phone",
+            "address",
+            "city",
+        ].forEach((campo) => {
+            const el = form.elements[campo];
+            if (el) datos.append(campo, el.value.trim());
+        });
         return datos;
     }
 
+    function abrirTab(tabHref) {
+        const tabLink = document.querySelector(
+            `a[data-bs-toggle="tab"][href="${tabHref}"]`,
+        );
+        if (tabLink && window.bootstrap) {
+            bootstrap.Tab.getOrCreateInstance(tabLink).show();
+        }
+    }
+
+    function nuevoPropietario() {
+        const form = document.getElementById("formOwner");
+        if (!form) return;
+
+        limpiarErroresValidacion("formOwner");
+        form.reset();
+        delete form.dataset.id;
+        document.getElementById("tituloFormPropietario").textContent =
+            "Nuevo Propietario";
+        abrirTab("#tabFormPropietario");
+    }
+
+    function editarPropietario(o) {
+        const form = document.getElementById("formOwner");
+        if (!form) return;
+
+        limpiarErroresValidacion("formOwner");
+        form.dataset.id = o.id;
+        form.elements["first_name"].value = o.first_name || "";
+        form.elements["last_name"].value = o.last_name || "";
+        form.elements["type_documento"].value = o.type_documento || "";
+        form.elements["n_documento"].value = o.n_documento || "";
+        form.elements["email"].value = o.email || "";
+        form.elements["phone"].value = o.phone || "";
+        form.elements["address"].value = o.address || "";
+        form.elements["city"].value = o.city || "";
+        document.getElementById("tituloFormPropietario").textContent =
+            "Editar Propietario — " + (o.full_name || "Propietario");
+        abrirTab("#tabFormPropietario");
+    }
+
+    document.getElementById("btnNuevoPropietario")?.addEventListener(
+        "click",
+        nuevoPropietario,
+    );
+    document.getElementById("btnRegresarListado")?.addEventListener(
+        "click",
+        () => abrirTab("#tabBuscarPropietario"),
+    );
+    document.getElementById("btnRegresarFicha")?.addEventListener(
+        "click",
+        () => abrirTab("#tabBuscarPropietario"),
+    );
+
+    function verFichaPropietario(id) {
+        const contenedor = document.getElementById("contenidoFichaPropietario");
+        const titulo = document.getElementById("tituloFichaPropietario");
+        if (!contenedor || !titulo) return;
+
+        contenedor.innerHTML =
+            '<div class="text-center text-muted py-4">' +
+            '<div class="spinner-border text-primary" role="status"></div>' +
+            '<p class="mb-0 mt-2">Cargando ficha…</p></div>';
+        abrirTab("#tabFichaPropietario");
+
+        ajax.get("/admin/owners/" + id)
+            .then((res) => {
+                const o = res.data || res;
+                titulo.textContent =
+                    "Ficha del Propietario — " + (o.full_name || "Propietario");
+                contenedor.innerHTML = renderFicha(o);
+            })
+            .catch(() => {
+                contenedor.innerHTML =
+                    '<div class="text-center text-muted py-4">' +
+                    '<i class="ri-error-warning-line fs-1"></i>' +
+                    '<p class="mb-0 mt-2">No se pudo cargar la ficha.</p></div>';
+            });
+    }
+
+    function renderFicha(o) {
+        const filas = [
+            ["Nombres", o.first_name],
+            ["Apellidos", o.last_name],
+            ["Documento", o.type_documento ? o.type_documento + " — " + o.n_documento : "—"],
+            ["Teléfono", o.phone],
+            ["Email", o.email || "—"],
+            ["Ciudad", o.city || "—"],
+            ["Dirección", o.address || "—"],
+        ];
+        const dl = filas
+            .map(
+                ([label, valor]) =>
+                    '<dt class="col-sm-4 text-muted">' +
+                    label +
+                    "</dt><dd class='col-sm-8'>" +
+                    (valor ?? "—") +
+                    "</dd>",
+            )
+            .join("");
+
+        const mascotas = o.pacientes || [];
+        let filasMascotas;
+        if (!mascotas.length) {
+            filasMascotas =
+                '<div class="text-center text-muted py-4">' +
+                '<i class="ri-paw-line fs-1"></i>' +
+                '<p class="mb-0 mt-2">Este propietario aún no tiene mascotas registradas.</p></div>';
+        } else {
+            filasMascotas =
+                '<div class="table-responsive"><table class="table table-borderless dt-responsive nowrap w-100 mb-0">' +
+                '<thead><tr style="border-bottom: 2px solid #212529;">' +
+                "<th>Nombre</th><th>Especie</th><th>Raza</th><th>Nacimiento</th><th>Acciones</th>" +
+                "</tr></thead><tbody>" +
+                mascotas
+                    .map(
+                        (p) =>
+                            "<tr><td>" +
+                            (p.name || "—") +
+                            "</td><td>" +
+                            (p.species || "—") +
+                            "</td><td>" +
+                            (p.breed || "—") +
+                            "</td><td>" +
+                            (p.birth_date
+                                ? new Date(p.birth_date).toLocaleDateString("es-PE")
+                                : "—") +
+                            '</td><td><a href="' +
+                            p.show_url +
+                            '" class="btn btn-soft-primary btn-sm" title="Ficha">' +
+                            '<i class="ri-file-user-line"></i></a></td></tr>',
+                    )
+                    .join("") +
+                "</tbody></table></div>";
+        }
+
+        return (
+            '<div class="row g-4">' +
+            '<div class="col-lg-5">' +
+            '<div class="card mb-0">' +
+            '<div class="card-header"><h4 class="card-title mb-0">Datos del Propietario</h4></div>' +
+            '<div class="card-body"><dl class="row mb-0">' +
+            dl +
+            '</dl>' +
+            '<div class="d-flex gap-2 mt-3">' +
+            '<button type="button" class="btn btn-soft-primary btn-sm btn-ficha-editar" data-id="' +
+            o.id +
+            '"><i class="ri-pencil-line me-1"></i>Editar</button>' +
+            "</div></div></div></div>" +
+            '<div class="col-lg-7">' +
+            '<div class="card mb-0">' +
+            '<div class="card-header"><h4 class="card-title mb-0">Mascotas (' +
+            (o.pacientes_count || mascotas.length) +
+            ")</h4></div>" +
+            '<div class="card-body">' +
+            filasMascotas +
+            "</div></div></div></div>"
+        );
+    }
+
+    function aplicarEdicionPorQuery() {
+        const params = new URLSearchParams(window.location.search);
+        const id = params.get("edit");
+        if (!id) return;
+        ajax.get("/admin/owners/" + id).then((res) => {
+            editarPropietario(res.data || res);
+        });
+    }
+
+    let dataTable = null;
+
     const tableEl = document.getElementById("table-owners");
     if (tableEl) {
-        let dataTable = null;
+        let terminoBusqueda = "";
+        let terminoBusquedaTimer = null;
 
         function cargarDatos() {
             const url = "/admin/owners";
-            let opt = {};
 
             if (!dataTable) {
                 dataTable = $("#table-owners").DataTable({
                     serverSide: true,
                     processing: true,
                     pageLength: 15,
+                    searching: false,
+                    lengthChange: false,
+                    info: false,
                     ajax: function (data, callback) {
                         const params = {
                             per_page: data.length,
                             page: Math.floor(data.start / data.length) + 1,
                         };
-                        if (data.search && data.search.value) {
-                            params.search = data.search.value;
+                        if (terminoBusqueda) {
+                            params.search = terminoBusqueda;
                         }
                         if (data.order && data.order.length) {
                             params.sort_by = data.order[0].column;
@@ -128,14 +295,12 @@
 
         function renderAcciones(o) {
             return (
-                '<a href="' +
-                o.show_url +
-                '" class="btn btn-soft-info btn-sm me-1" title="Ver ficha">' +
-                '<i class="ri-eye-line"></i></a>' +
-                '<a href="' +
-                o.edit_url +
-                '" class="btn btn-soft-primary btn-sm me-1" title="Editar">' +
-                '<i class="ri-pencil-line"></i></a>' +
+                '<button type="button" class="btn btn-soft-info btn-sm me-1 btn-ver-owner" data-id="' +
+                o.id +
+                '" title="Ver ficha"><i class="ri-eye-line"></i></button>' +
+                '<button type="button" class="btn btn-soft-primary btn-sm me-1 btn-editar-owner" data-id="' +
+                o.id +
+                '" title="Editar"><i class="ri-pencil-line"></i></button>' +
                 '<button type="button" class="btn btn-soft-danger btn-sm btn-eliminar-owner" data-id="' +
                 o.id +
                 '" title="Eliminar"><i class="ri-delete-bin-line"></i></button>'
@@ -143,7 +308,28 @@
         }
 
         function bindHandlers() {
+            document.querySelectorAll(".btn-ver-owner").forEach((btn) => {
+                if (btn.dataset.bound) return;
+                btn.dataset.bound = "1";
+                btn.addEventListener("click", function () {
+                    verFichaPropietario(parseInt(this.dataset.id, 10));
+                });
+            });
+
+            document.querySelectorAll(".btn-editar-owner").forEach((btn) => {
+                if (btn.dataset.bound) return;
+                btn.dataset.bound = "1";
+                btn.addEventListener("click", function () {
+                    const id = parseInt(this.dataset.id, 10);
+                    ajax.get("/admin/owners/" + id).then((res) => {
+                        editarPropietario(res.data);
+                    });
+                });
+            });
+
             document.querySelectorAll(".btn-eliminar-owner").forEach((btn) => {
+                if (btn.dataset.bound) return;
+                btn.dataset.bound = "1";
                 btn.addEventListener("click", function () {
                     eliminar(parseInt(this.dataset.id, 10));
                 });
@@ -179,28 +365,51 @@
             });
         }
 
+        $("#busquedaPropietario").on("input", function () {
+            const termino = this.value;
+            clearTimeout(terminoBusquedaTimer);
+            terminoBusquedaTimer = setTimeout(function () {
+                terminoBusqueda = termino.trim();
+                dataTable.ajax.reload();
+            }, 350);
+        });
+
+        $("#busquedaPropietario").on("keydown", function (e) {
+            if (e.key === "Enter") e.preventDefault();
+        });
+
         cargarDatos();
     }
 
-    const formCrear = document.getElementById("formCrearOwner");
-    if (formCrear) {
+    aplicarEdicionPorQuery();
+
+    const formOwner = document.getElementById("formOwner");
+    if (formOwner) {
         const btn = document.getElementById("btnGuardarOwner");
-        formCrear.addEventListener("submit", (e) => {
+        formOwner.addEventListener("submit", (e) => {
             e.preventDefault();
-            limpiarErroresValidacion("formCrearOwner");
+            limpiarErroresValidacion("formOwner");
             btn.disabled = true;
-            const datos = recolectarDatos(formCrear);
-            ajax.post("/admin/owners", datos)
+            const id = formOwner.dataset.id;
+            const ruta = id ? "/admin/owners/" + id : "/admin/owners";
+            const datos = recolectarOwnerDatos(formOwner);
+            const peticion = id
+                ? ajax.put(ruta, datos)
+                : ajax.post(ruta, datos);
+
+            peticion
                 .then((res) => {
                     Swal.fire("Listo", res.message, "success").then(() => {
-                        window.location.href = "/admin/owners";
+                        nuevoPropietario();
+                        abrirTab("#tabBuscarPropietario");
+                        if (dataTable) dataTable.ajax.reload();
                     });
                 })
                 .catch((error) => {
                     if (error.status === 422) {
                         pintarErroresValidacion(
                             error.response.errors,
-                            "formCrearOwner",
+                            "formOwner",
                         );
                     }
                 })
@@ -210,34 +419,13 @@
         });
     }
 
-    const formEditar = document.getElementById("formEditarOwner");
-    if (formEditar) {
-        const btn = document.getElementById("btnActualizarOwner");
-        formEditar.addEventListener("submit", (e) => {
-            e.preventDefault();
-            limpiarErroresValidacion("formEditarOwner");
-            btn.disabled = true;
-            const datos = recolectarDatos(formEditar);
-            ajax.put(
-                "/admin/owners/" + formEditar.dataset.id,
-                datos,
-            )
-                .then((res) => {
-                    Swal.fire("Listo", res.message, "success").then(() => {
-                        window.location.href = "/admin/owners";
-                    });
-                })
-                .catch((error) => {
-                    if (error.status === 422) {
-                        pintarErroresValidacion(
-                            error.response.errors,
-                            "formEditarOwner",
-                        );
-                    }
-                })
-                .finally(() => {
-                    btn.disabled = false;
-                });
-        });
-    }
+    document.addEventListener("click", function (e) {
+        const btnEditar = e.target.closest(".btn-ficha-editar");
+        if (btnEditar) {
+            const id = parseInt(btnEditar.dataset.id, 10);
+            ajax.get("/admin/owners/" + id).then((res) => {
+                editarPropietario(res.data || res);
+            });
+        }
+    });
 })();

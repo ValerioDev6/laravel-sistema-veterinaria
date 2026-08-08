@@ -64,9 +64,9 @@
                         </div>
                     </form>
 
-                    <table id="table-citas" class="table table-striped dt-responsive nowrap w-100">
+                    <table id="table-citas" class="table table-borderless dt-responsive nowrap w-100">
                         <thead>
-                            <tr>
+                            <tr style="border-bottom: 2px solid #212529;">
                                 <th>ID</th>
                                 <th>Mascota</th>
                                 <th>Veterinario</th>

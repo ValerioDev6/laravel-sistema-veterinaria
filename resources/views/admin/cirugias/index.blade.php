@@ -26,9 +26,9 @@
                     </a>
                 </div>
                 <div class="card-body">
-                    <table id="table-cirugias" class="table table-striped dt-responsive nowrap w-100">
+                    <table id="table-cirugias" class="table table-borderless dt-responsive nowrap w-100">
                         <thead>
-                            <tr>
+                            <tr style="border-bottom: 2px solid #212529;">
                                 <th>ID</th>
                                 <th>Mascota</th>
                                 <th>Tipo</th>

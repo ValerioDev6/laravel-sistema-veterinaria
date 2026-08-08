@@ -14,6 +14,8 @@ use Illuminate\Pipeline\Pipeline;
 
 class ListCitasAction
 {
+    // filtas por nombr mascota , especio, veterinarian, estado de pago , fecha
+
     public function execute(Request $request): LengthAwarePaginator
     {
         $query = app(Pipeline::class)

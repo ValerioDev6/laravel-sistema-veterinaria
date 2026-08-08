@@ -13,19 +13,6 @@ class OwnerController extends Controller
         return view("admin.owners.index", ["title" => "Propietarios"]);
     }
 
-    public function create(): View
-    {
-        return view("admin.owners.create", ["title" => "Nuevo Propietario"]);
-    }
-
-    public function edit(Owner $owner): View
-    {
-        return view("admin.owners.edit", [
-            "title" => "Editar Propietario",
-            "owner" => $owner,
-        ]);
-    }
-
     public function show(Owner $owner): View
     {
         $owner->load("pacientes.breed.species");

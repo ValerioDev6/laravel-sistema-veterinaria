@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Cita;
 use App\Models\Paciente;
 use App\Models\Service;
+use App\Models\Species;
 use App\Models\User;
 use Illuminate\View\View;
 
@@ -16,6 +17,7 @@ class CitaController extends Controller
         return view("admin.citas.index", [
             "title" => "Citas",
             "veterinarians" => $this->veterinarians(),
+            "species" => $this->species(),
             "statuses" => $this->statuses(),
         ]);
     }
@@ -71,6 +73,13 @@ class CitaController extends Controller
         return User::role("Veterinario")
             ->orderBy("username")
             ->pluck("username", "id")
+            ->toArray();
+    }
+
+    private function species(): array
+    {
+        return Species::orderBy("name")
+            ->pluck("name", "id")
             ->toArray();
     }
 

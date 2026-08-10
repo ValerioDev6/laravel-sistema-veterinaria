@@ -32,7 +32,14 @@
                 </div>
                 <div class="card-body">
                     <form id="formFiltrosCitas" class="row g-3 mb-3">
-                        <div class="col-md-3">
+                        <div class="col-md-4">
+                            <label class="form-label" for="filter-busqueda">Buscar</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="ri-search-line"></i></span>
+                                <input type="search" class="form-control" id="busquedaCitas" name="search" placeholder="Mascota, veterinario o especie…">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
                             <label class="form-label" for="filter-veterinario">Veterinario</label>
                             <select class="form-select" id="filter-veterinario" name="veterinarian_id">
                                 <option value="">Todos</option>
@@ -41,9 +48,22 @@
                                 @endforeach
                             </select>
                         </div>
+                        <div class="col-md-4">
+                            <label class="form-label" for="filter-especie">Especie</label>
+                            <select class="form-select" id="filter-especie" name="species_id">
+                                <option value="">Todas</option>
+                                @foreach ($species as $value => $label)
+                                    <option value="{{ $value }}">{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
                         <div class="col-md-3">
-                            <label class="form-label" for="filter-fecha">Fecha</label>
-                            <input type="date" class="form-control" id="filter-fecha" name="appointment_date">
+                            <label class="form-label" for="filter-fecha-desde">Fecha desde</label>
+                            <input type="date" class="form-control" id="filter-fecha-desde" name="appointment_date_from">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label" for="filter-fecha-hasta">Fecha hasta</label>
+                            <input type="date" class="form-control" id="filter-fecha-hasta" name="appointment_date_to">
                         </div>
                         <div class="col-md-3">
                             <label class="form-label" for="filter-estado">Estado</label>
@@ -59,7 +79,7 @@
                                 <i class="ri-filter-line me-1"></i>Filtrar
                             </button>
                             <button type="button" class="btn btn-light" id="btnLimpiarFiltros">
-                                Limpiar
+                                <i class="ri-eraser-line me-1"></i>Limpiar
                             </button>
                         </div>
                     </form>

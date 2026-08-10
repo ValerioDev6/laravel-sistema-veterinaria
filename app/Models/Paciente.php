@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 
 /**
  * Class Paciente
- * 
+ *
  * @property int $id
  * @property int $owner_id
  * @property int $species_id
@@ -27,7 +27,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $medical_notes
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * 
+ *
  * @property Owner $owner
  * @property Species $species
  * @property Breed|null $breed

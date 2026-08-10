@@ -38,15 +38,30 @@
         });
     }
 
+    let terminoBusqueda = "";
+
     function recolectarFiltros(form) {
         const data = {};
-        const veterinario = form.elements["veterinarian_id"];
-        if (veterinario) data.veterinarian_id = veterinario.value.trim();
-        const fecha = form.elements["appointment_date"];
-        if (fecha) data.appointment_date = fecha.value.trim();
-        const estado = form.elements["status"];
-        if (estado) data.status = estado.value.trim();
+        const campos = [
+            "veterinarian_id",
+            "species_id",
+            "appointment_date_from",
+            "appointment_date_to",
+            "status",
+        ];
+        campos.forEach((campo) => {
+            const el = form.elements[campo];
+            if (el && el.value && el.value.trim() !== "") {
+                data[campo] = el.value.trim();
+            }
+        });
         return data;
+    }
+
+    function limpiarBuscador() {
+        const input = document.getElementById("busquedaCitas");
+        if (input) input.value = "";
+        terminoBusqueda = "";
     }
 
     function recolectarDatos(form) {
@@ -54,13 +69,16 @@
         const pet_id = form.elements["pet_id"];
         if (pet_id) datos.append("pet_id", pet_id.value.trim());
         const veterinarian_id = form.elements["veterinarian_id"];
-        if (veterinarian_id) datos.append("veterinarian_id", veterinarian_id.value.trim());
+        if (veterinarian_id)
+            datos.append("veterinarian_id", veterinarian_id.value.trim());
         const service_id = form.elements["service_id"];
         if (service_id) datos.append("service_id", service_id.value.trim());
         const appointment_date = form.elements["appointment_date"];
-        if (appointment_date) datos.append("appointment_date", appointment_date.value.trim());
+        if (appointment_date)
+            datos.append("appointment_date", appointment_date.value.trim());
         const appointment_time = form.elements["appointment_time"];
-        if (appointment_time) datos.append("appointment_time", appointment_time.value.trim());
+        if (appointment_time)
+            datos.append("appointment_time", appointment_time.value.trim());
         const reason = form.elements["reason"];
         if (reason) datos.append("reason", reason.value.trim());
         const status = form.elements["status"];
@@ -71,11 +89,14 @@
     const tableEl = document.getElementById("table-citas");
     if (tableEl) {
         let dataTable = null;
+        let terminoBusquedaTimer = null;
 
         function getFilters() {
             const form = document.getElementById("formFiltrosCitas");
             if (!form) return {};
-            return recolectarFiltros(form) || {};
+            const filtros = recolectarFiltros(form) || {};
+            if (terminoBusqueda) filtros.search = terminoBusqueda;
+            return filtros;
         }
 
         function cargarDatos() {
@@ -84,14 +105,14 @@
                     serverSide: true,
                     processing: true,
                     pageLength: 15,
+                    searching: false,
+                    lengthChange: false,
+                    info: false,
                     ajax: function (data, callback) {
                         const params = {
                             per_page: data.length,
                             page: Math.floor(data.start / data.length) + 1,
                         };
-                        if (data.search && data.search.value) {
-                            params.search = data.search.value;
-                        }
                         if (data.order && data.order.length) {
                             params.sort_by = data.order[0].column;
                             params.sort_dir = data.order[0].dir;
@@ -111,13 +132,32 @@
                     },
                     columns: [
                         { data: "id" },
-                        { data: "pet_name", render: (data, type, row) => row.pet_name || "-" },
-                        { data: "veterinarian", render: (data, type, row) => row.veterinarian || "-" },
-                        { data: "service", render: (data, type, row) => row.service || "—" },
+                        {
+                            data: "pet_name",
+                            render: (data, type, row) => row.pet_name || "-",
+                        },
+                        {
+                            data: "veterinarian",
+                            render: (data, type, row) =>
+                                row.veterinarian || "-",
+                        },
+                        {
+                            data: "service",
+                            render: (data, type, row) => row.service || "—",
+                        },
                         { data: "appointment_date" },
                         { data: "appointment_time" },
-                        { data: "status", render: (data, type, row) => renderEstado(row.status), orderable: false },
-                        { data: null, render: (data, type, row) => renderAcciones(row), orderable: false },
+                        {
+                            data: "status",
+                            render: (data, type, row) =>
+                                renderEstado(row.status),
+                            orderable: false,
+                        },
+                        {
+                            data: null,
+                            render: (data, type, row) => renderAcciones(row),
+                            orderable: false,
+                        },
                     ],
                     order: [],
                     drawCallback: function () {
@@ -204,7 +244,8 @@
                 .catch((error) => {
                     Swal.fire(
                         "Error",
-                        error.response?.message || "No se pudo actualizar el estado.",
+                        error.response?.message ||
+                            "No se pudo actualizar el estado.",
                         "error",
                     );
                 });
@@ -239,6 +280,19 @@
             });
         }
 
+        $("#busquedaCitas").on("input", function () {
+            const termino = this.value;
+            clearTimeout(terminoBusquedaTimer);
+            terminoBusquedaTimer = setTimeout(function () {
+                terminoBusqueda = termino.trim();
+                dataTable.ajax.reload();
+            }, 350);
+        });
+
+        $("#busquedaCitas").on("keydown", function (e) {
+            if (e.key === "Enter") e.preventDefault();
+        });
+
         const formFiltros = document.getElementById("formFiltrosCitas");
         if (formFiltros) {
             formFiltros.addEventListener("submit", (e) => {
@@ -249,6 +303,7 @@
                 .getElementById("btnLimpiarFiltros")
                 ?.addEventListener("click", () => {
                     formFiltros.reset();
+                    limpiarBuscador();
                     cargarDatos();
                 });
         }
@@ -271,7 +326,10 @@
                 })
                 .catch((error) => {
                     if (error.status === 422) {
-                        pintarErroresValidacion(error.response.errors, "formCrearCita");
+                        pintarErroresValidacion(
+                            error.response.errors,
+                            "formCrearCita",
+                        );
                     }
                 })
                 .finally(() => {
@@ -298,7 +356,10 @@
                 })
                 .catch((error) => {
                     if (error.status === 422) {
-                        pintarErroresValidacion(error.response.errors, "formEditarCita");
+                        pintarErroresValidacion(
+                            error.response.errors,
+                            "formEditarCita",
+                        );
                     }
                 })
                 .finally(() => {

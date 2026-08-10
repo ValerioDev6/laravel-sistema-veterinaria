@@ -62,7 +62,9 @@
     function validarPropietarioDuplicado(datos) {
         const modoNuevo =
             !datos.get("owner_id") &&
-            (datos.get("first_name") || datos.get("email") || datos.get("phone"));
+            (datos.get("first_name") ||
+                datos.get("email") ||
+                datos.get("phone"));
 
         if (!modoNuevo) return Promise.resolve();
 
@@ -97,8 +99,7 @@
                         toast: true,
                         position: "top-end",
                         icon: "warning",
-                        title:
-                            "El propietario ya está registrado. Revisa los datos.",
+                        title: "El propietario ya está registrado. Revisa los datos.",
                         showConfirmButton: false,
                         timer: 3500,
                         timerProgressBar: true,
@@ -487,7 +488,9 @@
 
             const datos = recolectarDatos($form[0]);
             const prevalidar =
-                metodo === "post" ? validarPropietarioDuplicado(datos) : Promise.resolve();
+                metodo === "post"
+                    ? validarPropietarioDuplicado(datos)
+                    : Promise.resolve();
 
             prevalidar
                 .then((duplicado) => {

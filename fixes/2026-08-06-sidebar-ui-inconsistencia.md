@@ -13,14 +13,17 @@
 Revisando `resources/views/layouts/app.blade.php` (sidebar de Velzon) y todas las vistas `admin/**/index.blade.php`:
 
 ### 1. Tamaño de fuente inconsistente
+
 La mayoría de módulos simples (Branches, Users, Species, Breeds, Services, VaccineTypes, Owners, Pacientes, Medicines, Vacunas, Cirugías, Facturas, Medicamentos, Sucursales) estaban anidados dentro de un menú colapsable de Velzon (`menu-dropdown` con `ul.nav.nav-sm.flex-column`). Ese anidamiento usa la utilidad `nav-sm` del tema, cuyo tamaño de fuente (`--vz-vertical-menu-sub-item-font-size`) es menor que el de los ítems de nivel superior (`--vz-vertical-menu-item-font-size`), generando una mezcla de tipografías inconsistente: los ítems con submenú se veían proporcionalmente pequeños/anidados frente a los ítems top-level de la plantilla.
 
 No se encontraron clases Bootstrap puras sueltas (`fs-*`) en el árbol de menús; la inconsistencia venía de **abrir submenú para módulos que en realidad son un simple enlace a su listado**, rompiendo el patrón tipográfico top-level de Velzon.
 
 ### 2. Menús redundantes
+
 Confirmado en **todos** los módulos ya construidos: el `index.blade.php` de cada módulo ya tiene su propio botón "Nuevo/Crear" (entrada con `route('admin.X.create')`), pero el sidebar duplicaba ese punto de entrada con un subenlace "Nuevo/Crear X" / "Registrar X", además del "Listado".
 
 Módulos con subenlace de crear redundante detectados:
+
 - Branches ("Nueva Sucursal")
 - Users ("Nuevo Usuario")
 - Owners ("Nuevo Propietario")
@@ -52,6 +55,7 @@ Todo en `resources/views/layouts/app.blade.php` (sidebar), sin tocar más nada.
 - **Historial Clínico** → normalizado a `nav-link menu-link`.
 
 **Menus que se MANTUVIERON como submenú de Velzon** porque agrupan más de un listado real de distinto recurso (cant from eliminar por ser navegación legitima, no "crear"):
+
 - **Citas**: conserva Listado + Calendario (se eliminó solo "Nueva Cita").
 - **Vacunas**: conserva Listado + Tipos de Vacuna (se elimino solo "Registrar Vacuna").
 - **Especies y Razas**: conserva su submenu con los dos índices (Species, Breeds) — no había sub "crear", solo son dos listados.
@@ -61,9 +65,11 @@ Como resultado, el árbol de menús ahora usa uniformemente la tipografía top-l
 ---
 
 ## Motores de cambio
+
 - Eliminados los bloques colapsables `menu-dropdown` redundantes del sidebar.
 - Unificado el uso de la clase `nav-link menu-link` en todos los ítems top-level.
 - Ajustados solo los elementos del sidebar; no se tocaron Actions/Controllers/Requests, ni se avanzaron fases pendientes.
 
 ## Estado de la carga de vistas
+
 - `php artisan view:cache` pasado con éxito (Blade OK).

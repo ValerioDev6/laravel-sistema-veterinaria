@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Model;
  * 
  * @property int $id
  * @property string $name
+ * @property float $base_price
  * @property int|null $species_id
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -29,11 +30,13 @@ class VaccineType extends Model
 	protected $table = 'vaccine_types';
 
 	protected $casts = [
-		'species_id' => 'int'
+		'species_id' => 'int',
+		'base_price' => 'float'
 	];
 
 	protected $fillable = [
 		'name',
+		'base_price',
 		'species_id'
 	];
 

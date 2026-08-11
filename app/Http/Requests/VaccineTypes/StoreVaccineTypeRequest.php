@@ -16,6 +16,7 @@ class StoreVaccineTypeRequest extends FormRequest
         return [
             "name" => ["required", "string", "max:100", "unique:vaccine_types,name"],
             "species_id" => ["nullable", "integer", "exists:species,id"],
+            "base_price" => ["required", "numeric", "min:0"],
         ];
     }
 }

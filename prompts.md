@@ -657,4 +657,89 @@ Audita `app/Http/Controllers/Api/Admin/**` completo. Para cada `index()` que ten
 - HTTP real (con `php artisan serve`): `GET /api/admin/citas/calendario` devuelve todas las citas con `vet_color`; `PATCH /api/admin/citas/2/estado` cambió pendiente→confirmada→(restaurada a pendiente) con respuesta `{status,message,data}`. BD quedó intacta (9 citas, cita 2 pendiente).
 
 ---
+## Prompt #18 — 2026-08-11 (UI del módulo Vacunas replicando Citas)
 
+**Tipo:** Mejora de módulo — Vacunas con filtros, disponibilidad de veterinarios y pago, igual que Citas
+
+**Contexto:** El usuario pidió rediseñar el módulo Vacunas para replicar el patrón de Citas: (1) index con filtros (mascota, especie, veterinario, estado de pago, fecha desde–hasta), (2) formulario con disponibilidad de veterinarios (fecha → vets → horas libres/ocupadas) y (3) sección de Pago en el formulario (método, total, adelanto).
+
+**Decisión de diseño:** para replicar el selector de horas de Citas se agregó `vacunas.vaccination_time` (TIME) y `vaccine_types.base_price` (decimal 10,2 default 0) vía migración `2026_08_11_000001_add_time_and_price_to_vacunas_and_vaccine_types.php`; dump SQL y seeders actualizados (7 tipos con precios 35–70; 6 vacunas con hora).
+
+**Cambios:**
+
+1. **Disponibilidad unificada:** `ObtenerDisponibilidadAction` ahora une citas activas + vacunas (con `vaccination_time`) como horas ocupadas del veterinario. Nueva `app/Actions/Vacunas/ValidarDisponibilidadVacuna.php` (horario activo del día + conflicto con cita pendiente/confirmada + conflicto con otra vacuna, con `ignorarVacunaId` para update).
+2. **Requests:** `StoreVacunaRequest`/`UpdateVacunaRequest` con `vaccination_time`, `payment_method`, `advance_amount` obligatorios y `after()` con `ValidarDisponibilidadVacuna`.
+3. **Actions [TX]:** `CreateVacunaAction` (vacuna + medical_record + reminder + Invoice + Payment) y `UpdateVacunaAction` (TX + `registrarPago` upsert de invoice/pago; estado `pagado`/`parcial`/`pendiente` según adelanto, total = `base_price` del tipo).
+4. **Filtros:** `app/Filters/Vacunas/` (Busqueda, Especie, Veterinario, EstadoPago, Fecha). `ListVacunasAction` con pipeline completo + eager load `paciente, user, vaccine_type, invoice, invoice.payments`.
+5. **Resource:** `VacunaResource` con `species`, `vaccination_time`, `vaccine_price`, `payment_status`, `payment_total`, `payment_paid`.
+6. **API:** `Api/Admin/VacunaController` con método `disponibilidad` + `show`; ruta `GET api/admin/vacunas/disponibilidad` (`admin.api.vacunas.disponibilidad`) antes del apiResource.
+7. **Frontend:** `Admin/VacunaController` pasa veterinarians/species/paymentStatuses (index) y pacientesData/vaccineTypes/invoice (create/edit). Vistas `index` (formFiltrosVacunas + columna Pago) y `create`/`edit` (bloque disponibilidad con vet-card + horas, preview mascota, sección Pago). `public/js/pages/vacunas.js` reescrito (DataTable serverSide + filtros + `initVacunaForm`).
+8. **CRUD vaccine-types:** `base_price` en Requests/Actions/Resource/vistas + `vaccine-types.js`.
+
+**Bug preexistente corregido de paso:** `UpdateVaccineTypeRequest` línea 21 usaba `{$this->vaccineType->id}` pero el parámetro de ruta es `{vaccine_type}` (snake) → `$this->vaccineType` era null → "Attempt to read property 'id' on null" al actualizar por HTTP. Corregido a `{$this->route('vaccine_type')?->id}`.
+
+**Verificado:**
+- `php -l`, `node --check`, `view:cache`, `route:list` OK.
+- HTTP real (`php artisan serve --port=8123`): disponibilidad 2026-05-15 marca 09:30 dr.torres ocupada (vacuna Rocky); POST vacuna con pago → 201 invoice `pagado`; 422 por hora ocupada con otra vacuna; 422 por hora ocupada con cita; PUT → parcial; filtros todos OK; CRUD vaccine-types create/update/delete con precio OK (tras el fix).
+- Limpieza: vacuna de prueba y tipos de prueba (9, 10) eliminados → BD final 7 tipos, 6 vacunas, 12 invoices, 9 citas intactas.
+- Servidor detenido al cerrar.
+
+**Corrección posterior (update roto):** el update de vacunas fallaba (422 "The vaccination date field must be a date after or equal to today.") porque `UpdateVacunaRequest` tenía `after_or_equal:today` y las 6 vacunas del seed tienen fechas pasadas. Fix: la regla de `vaccination_date` en update es una Closure que permite conservar la fecha original pasada; el `min` del input en `edit.blade.php` usa la fecha original; la vacuna de Kiara se movió de domingo (día sin horario) a viernes en `VacunaSeeder` y en la BD; y se reordenaron los scripts de `edit.blade.php` (datos `window.vacunasPacientesData`/`vacunaEditarInit` antes de cargar `vacunas.js`) para que el preview de mascota y la preselección de disponibilidad apliquen al cargar la página. Verificado por HTTP: PUT con fecha pasada original → 200 para las 6 vacunas; PUT a otra fecha pasada → 422; vista edit 200. BD restaurada limpia.
+
+**Ampliación (nuevo tipo de vacuna inline):** el usuario pidió que Vacunas permita registrar un nuevo tipo de vacuna desde el formulario, replicando `new_service` de Citas. Fix: `vaccine_type_id` en los Requests pasó a `required_without:new_vaccine_type` + nullable; se agregó `new_vaccine_type` (name, base_price, species_id); `CreateVacunaAction`/`UpdateVacunaAction` crean el `VaccineType` en la TX si no viene id; `Admin/VacunaController` pasa `species`; las vistas create/edit tienen la opción `＋ Crear nuevo tipo de vacuna` (`__nuevo__`) con bloque de nombre/precio/especie; `vacunas.js` maneja el toggle y calcula el total con el precio del nuevo tipo. Verificado por HTTP: POST/PUT con `new_vaccine_type` → 201/200 (invoice con el precio nuevo); 422 si falta tipo y nuevo tipo; 422 si falta el nombre. BD restaurada limpia (7 tipos, 6 vacunas, 12 invoices, 6 payments, 9 citas).
+
+---
+
+## Prompt #19 — 2026-08-11 (Calendario unificado: Citas + Vacunas + Cirugías)
+
+**Tipo:** Mejora de UI — nuevo calendario general que muestra los 3 tipos clínicos
+
+**Contexto:** El usuario consideró que el calendario existente (Citas → Calendario) solo mostraba citas, cuando vacunas y cirugías también tienen fecha. Pidió un calendario donde se vean las tres cosas, cada tipo con su propio color, sin tocar el código de los módulos de Citas/Vacunas/Cirugías (sus CRUD y el calendario de citas quedan intactos).
+
+**Decisiones de diseño (aprobadas en brainstorming):**
+- Ubicación: nuevo ítem de menú principal **"Calendario"** (entrada directa, sin dropdown) → `GET /admin/calendario` (`admin.calendario.index`).
+- Colores: 1 color fijo por tipo — Citas `#405189` (azul), Vacunas `#10b981` (verde), Cirugías `#f59e0b` (naranja). Leyenda con 3 chips bajo el calendario.
+- Clic en evento: offcanvas único con detalle (mascota, especie, raza, dueño, teléfono, veterinario, fecha/hora, detalle según tipo, estado, notas) + botón **Editar** que navega a la edición de ese registro. Sin cambio de estado inline (eso ya vive en cada sección).
+
+**Cambios:**
+
+1. **`app/Actions/Calendario/CalendarioAction.php`** (nuevo) — devuelve las 3 colecciones sin paginar con sus relaciones: citas (`paciente.species/breed/owner`, `veterinarian`, `service`, `medical_records`), vacunas (ídem con `user`, `vaccine_type`) y cirugías (`Surgiere` con `user`, `medical_records`).
+2. **`app/Http/Resources/CalendarioEventResource.php`** (nuevo) — recibe modelo + `$tipo` ("cita"|"vacuna"|"cirugia") y produce eventos FullCalendar: `id` prefijado (`cita-`, `vacuna-`, `cirugia-`), `title` (mascota), `start`/`end`, `allDay` (vacunas sin hora → allDay), `color` y `extendedProps` (tipo/tipo_label/color, mascota, veterinario, detalle, status/status_label, notas, `edit_url`). Constructor con parámetro extra (los JsonResource de Laravel lo soportan con `new CalendarioEventResource($m, "cita")`).
+3. **Controllers nuevos:** `Admin/CalendarioController@index` (vista) y `Api/Admin/CalendarioController@index` (une los 3 tipos vía `collect()->merge()` en un arreglo plano de eventos).
+4. **Rutas:** `GET admin/calendario` (web, `admin.calendario.index`) y `GET api/admin/calendario` (`admin.api.calendario`).
+5. **Vista `admin.calendario.index`** — copia el estilo FullCalendar de citas pero con `#calendar-general`, leyenda de 3 tipos y offcanvas `offcanvasEvento` con badge de tipo + `<dl>` informativo + botón Editar.
+6. **`public/js/pages/calendario.js`** (nuevo) — carga `ajax.get("/admin/calendario")` (el helper `public/js/config/ajax.js` ya antepone `baseURL="/api"` → `GET /api/admin/calendario`), asigna color por tipo, `eventClick` abre el offcanvas (Intl `es-PE` para fecha/hora, muestra "Próxima dosis" solo en vacunas, etiqueta de detalle según tipo), tooltip nativo con tipo · mascota · vet.
+7. **Sidebar** — ítem "Calendario" (icono `ri-calendar-2-line`) al final de la sección Clínica, tras Historial Clínico.
+
+**Fuera de alcance:** CRUD de citas/vacunas/cirugías intactos; `Citas → Calendario` (citas-calendar.js + CitaCalendarioResource) se mantiene como está.
+
+**Verificado:**
+- `php -l` en Action, Resource, 2 controllers y rutas; `node --check` en calendario.js; `view:cache` OK.
+- `route:list` confirma `admin.calendario.index` y `admin.api.calendario` sin conflicto con `admin.api.citas.calendario`.
+- HTTP real (`php artisan serve --port=8123`): login 302, vista `/admin/calendario` 200; `GET /api/admin/calendario` → 19 eventos (9 citas, 7 vacunas, 3 cirugías); ej. cita Rocky `#405189` con servicio "Consulta general" y edit_url `/admin/citas/1/edit`; vacuna Rocky `#10b981` "Séxtuple canina" → `/admin/vacunas/1/edit`; cirugía Thor `#f59e0b` "Esterilización" → `/admin/cirugias/1/edit`.
+- Servidor detenido al cerrar; BD intacta (no se modificó nada).
+
+**Corrección posterior (404 `api/api/admin/calendario`):** al abrir el calendario el usuario reportó "The route api/api/admin/calendario could not be found". Causa: en `calendario.js` se llamaba `ajax.get("/api/admin/calendario")` pero el helper `ajax` (`public/js/config/ajax.js`) ya antepone `baseURL="/api"` → resultaba `/api/api/admin/calendario`. Fix: la llamada pasó a `ajax.get("/admin/calendario")` (idéntico al patrón de `citas-calendar.js` con `/admin/citas/calendario`). Verificado con `node --check`; el resto de la página no cambió.
+
+**Corrección posterior (drawer sin guardar/cancelar + todo azul):** el usuario reportó dos problemas: (1) el drawer había perdido la actualización de estado — quedó solo con botón "Editar" — y debía volver a permitir Guardar/Cancelar; (2) en el calendario todo salía del mismo color azul. Fix:
+- Drawer: se eliminó el botón "Editar" y se añadió un **select de estado** por tipo (cita: pendiente/confirmada/completada/cancelada; vacuna: pendiente/parcial/pagado/anulado; cirugía: pendiente/en_proceso/completada/cancelada) + botones **Guardar** y **Cancelar**. Guardar hace `PATCH` según tipo: `/admin/citas/{id}/estado`, `/admin/cirugias/{id}/estado` (existían) y **nuevo** `PATCH /admin/vacunas/{id}/estado-pago` (endpoint `cambiarEstadoPago` con `CambiarEstadoPagoVacunaAction`, que reusa `RegistrarPagoAction`/`AnularPagoAction` según el estado destino).
+- Colores: la causa era que el tema Velzon fuerza `.fc-event-title` azul con `!important` y FullCalendar usa su azul por defecto si el color inline no gana. Fix: cada evento recibe `className` (`ev-cita`/`ev-vacuna`/`ev-cirugia`) y la vista define CSS con `!important` para el fondo (Citas `#405189`, Vacunas `#10b981`, Cirugías `#f59e0b`).
+- `CalendarioAction` ahora eager-loada `invoice` en vacunas y `eventoVacuna` expone `status`/`status_label` (estado de pago de la factura).
+- Verificado por HTTP: vacuna 1 pendiente→pagado→pendiente (invoice restaurada con saldo 35 y pago anulado); cita 2 y cirugía 3 ida y vuelta de estado; 19 eventos con colores y className correctos. `php -l`, `node --check`, `view:cache` OK. BD restaurada (se eliminó el único pago anulado de prueba creado en la sesión).
+
+---
+
+## Prompt #20 — 2026-08-11 (Rediseño del index de Tipos de Vacuna: búsqueda manual)
+
+**Tipo:** Mejora de UI — alinear `vaccine-types/index` a la convención del proyecto
+
+**Contexto:** El usuario pidió rediseñar `resources/views/admin/vaccine-types/index.blade.php` siguiendo la convención de las demás listas (ej. Vacunas): formulario de **búsqueda manual** con input + botones **Filtrar/Limpiar**, quitando la barra de búsqueda automática del DataTable. "Nada más que eso".
+
+**Cambios:**
+
+1. **Vista `index.blade.php`:** se agregó `<form id="formFiltrosVaccineTypes">` con input `busquedaVaccineTypes` (icono `ri-search-line`, placeholder "Nombre o especie…") + botones Filtrar (`ri-filter-line`) y Limpiar (`ri-eraser-line`), colocado entre el card-header y la tabla (mismo patrón de `admin/vacunas/index`).
+2. **`public/js/pages/vaccine-types.js`:** el DataTable ahora usa `searching: false, lengthChange: false, info: false` (sin buscador/paginación info nativos); se agregó `getFilters()` que inyecta `search` desde `terminoBusqueda`; el input dispara `dataTable.ajax.reload()` con debounce de 350 ms; Enter se bloquea; el submit del form y el botón Limpiar (que hace `form.reset()` + limpia el término) recargan la tabla.
+
+**Sin cambios de backend:** `ListVaccineTypesAction` ya filtraba por `search` vía `FiltrarPorBusqueda(['name'])`; aquí también coincide con la especie porque el resource devuelve el nombre de especie.
+
+**Verificado:** `node --check`, `view:cache`, `php -l` OK. HTTP real (`php artisan serve`): vista 200 con el form presente (4 coincidencias de ids en el HTML); `GET /api/admin/vaccine-types?search=rabia` → 2 (Rabia canina, Rabia felina); `search=felina` → 3 (Leucemia/Rabia/Triple felina); sin search → 7. Servidor detenido.

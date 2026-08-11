@@ -26,6 +26,59 @@
                     </a>
                 </div>
                 <div class="card-body">
+                    <form id="formFiltrosVacunas" class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label" for="busquedaVacunas">Buscar</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="ri-search-line"></i></span>
+                                <input type="search" class="form-control" id="busquedaVacunas" name="search" placeholder="Mascota, vacuna o veterinario…">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" for="filter-veterinario">Veterinario</label>
+                            <select class="form-select" id="filter-veterinario" name="veterinarian_id">
+                                <option value="">Todos</option>
+                                @foreach ($veterinarians as $value => $label)
+                                    <option value="{{ $value }}">{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" for="filter-especie">Especie</label>
+                            <select class="form-select" id="filter-especie" name="species_id">
+                                <option value="">Todas</option>
+                                @foreach ($species as $value => $label)
+                                    <option value="{{ $value }}">{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label" for="filter-estado-pago">Estado de pago</label>
+                            <select class="form-select" id="filter-estado-pago" name="payment_status">
+                                <option value="">Todos</option>
+                                @foreach ($paymentStatuses as $value => $label)
+                                    <option value="{{ $value }}">{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label" for="filter-fecha-desde">Fecha desde</label>
+                            <input type="date" class="form-control" id="filter-fecha-desde" name="vaccination_date_from">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label" for="filter-fecha-hasta">Fecha hasta</label>
+                            <input type="date" class="form-control" id="filter-fecha-hasta" name="vaccination_date_to">
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary me-2">
+                                <i class="ri-filter-line me-1"></i>Filtrar
+                            </button>
+                            <button type="button" class="btn btn-light" id="btnLimpiarFiltros">
+                                <i class="ri-eraser-line me-1"></i>Limpiar
+                            </button>
+                        </div>
+                    </form>
+
                     <table id="table-vacunas" class="table table-borderless dt-responsive nowrap w-100">
                         <thead>
                             <tr style="border-bottom: 2px solid #212529;">
@@ -34,7 +87,8 @@
                                 <th>Vacuna</th>
                                 <th>Veterinario</th>
                                 <th>Fecha</th>
-                                <th>Próxima dosis</th>
+                                <th>Hora</th>
+                                <th>Pago</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>

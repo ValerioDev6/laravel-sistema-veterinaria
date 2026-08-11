@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\Admin\BranchController;
 use App\Http\Controllers\Api\Admin\BreedController;
+use App\Http\Controllers\Api\Admin\CalendarioController;
 use App\Http\Controllers\Api\Admin\CitaController;
 use App\Http\Controllers\Api\Admin\CirugiaController;
 use App\Http\Controllers\Api\Admin\InvoiceController;
@@ -27,6 +28,11 @@ Route::get("/user", function (Illuminate\Http\Request $request) {
 Route::prefix("admin")
     ->name("admin.api.")
     ->group(function () {
+        Route::get("calendario", [
+            CalendarioController::class,
+            "index",
+        ])->name("calendario");
+
         Route::apiResource("branches", BranchController::class);
         Route::apiResource("species", SpeciesController::class);
         Route::apiResource("breeds", BreedController::class);
@@ -72,6 +78,14 @@ Route::prefix("admin")
             "cambiarEstado",
         ])->name("citas.estado");
 
+        Route::get("vacunas/disponibilidad", [
+            VacunaController::class,
+            "disponibilidad",
+        ])->name("vacunas.disponibilidad");
+        Route::patch("vacunas/{vacuna}/estado-pago", [
+            VacunaController::class,
+            "cambiarEstadoPago",
+        ])->name("vacunas.estado-pago");
         Route::apiResource("vacunas", VacunaController::class);
 
         Route::apiResource("cirugias", CirugiaController::class)->only([

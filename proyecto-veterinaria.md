@@ -259,7 +259,7 @@ Estas 20 tablas son el alcance completo del plan. Las tablas de Spatie (`permiss
 
 ### Fase 6: Módulo clínico
 
-- Registrar vacuna (`vacunas`), asociada a `vaccine_types` + cita opcional → transacción (vacuna + medical_record + reminder)
+- Registrar vacuna (`vacunas`), asociada a `vaccine_types` → transacción (vacuna + medical_record + reminder + invoice/pago opcional) — la UI incluye disponibilidad de veterinarios (fecha → vets → horas libres/ocupadas, agenda unificada con citas) y sección de Pago (método, total = `base_price` del tipo, adelanto)
 - Registrar cirugía (`surgiere`), con seguimiento de estado → transacción (cirugía + medical_record)
 - Registrar entrada en `medical_record` (consulta, vacuna o cirugía)
 - Agregar `prescriptions` (receta) y `vital_signs` (peso/temperatura) a un `medical_record`
@@ -553,6 +553,7 @@ app/
     ...
   Filters/
     Citas/
+    Vacunas/
     Facturas/
     ...
   Http/

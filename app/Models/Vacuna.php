@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $vaccine_type_id
  * @property int|null $cita_id
  * @property Carbon $vaccination_date
+ * @property Carbon|null $vaccination_time
  * @property Carbon|null $next_due_date
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -41,6 +42,7 @@ class Vacuna extends Model
 		'vaccine_type_id' => 'int',
 		'cita_id' => 'int',
 		'vaccination_date' => 'datetime',
+		'vaccination_time' => 'datetime',
 		'next_due_date' => 'datetime'
 	];
 
@@ -50,6 +52,7 @@ class Vacuna extends Model
 		'vaccine_type_id',
 		'cita_id',
 		'vaccination_date',
+		'vaccination_time',
 		'next_due_date'
 	];
 
@@ -71,6 +74,12 @@ class Vacuna extends Model
 	public function cita()
 	{
 		return $this->belongsTo(Cita::class);
+	}
+
+	public function invoice()
+	{
+		return $this->hasOne(Invoice::class, 'invoiceable_id')
+			->where('invoiceable_type', 'vacuna');
 	}
 
 	public function medical_records()

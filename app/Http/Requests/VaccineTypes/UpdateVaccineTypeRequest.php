@@ -18,9 +18,10 @@ class UpdateVaccineTypeRequest extends FormRequest
                 "required",
                 "string",
                 "max:100",
-                "unique:vaccine_types,name,{$this->vaccineType->id}",
+                "unique:vaccine_types,name,{$this->route('vaccine_type')?->id}",
             ],
             "species_id" => ["nullable", "integer", "exists:species,id"],
+            "base_price" => ["required", "numeric", "min:0"],
         ];
     }
 }

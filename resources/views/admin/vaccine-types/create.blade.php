@@ -31,6 +31,12 @@
                         </div>
 
                         <div class="mb-3">
+                            <label class="form-label" for="base_price">Precio (S/)</label>
+                            <input type="number" step="0.01" min="0" class="form-control" id="base_price" name="base_price" placeholder="0.00" value="0.00">
+                            <div class="invalid-feedback"></div>
+                        </div>
+
+                        <div class="mb-3">
                             <label class="form-label" for="species_id">Especie <span class="text-muted">(opcional)</span></label>
                             <select class="form-select" id="species_id" name="species_id">
                                 <option value="">Aplica a todas las especies</option>

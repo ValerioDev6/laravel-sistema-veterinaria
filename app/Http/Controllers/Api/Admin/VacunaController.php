@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
+use App\Actions\Citas\ObtenerDisponibilidadAction;
+use App\Actions\Vacunas\CambiarEstadoPagoVacunaAction;
 use App\Actions\Vacunas\CreateVacunaAction;
 use App\Actions\Vacunas\DeleteVacunaAction;
 use App\Actions\Vacunas\ListVacunasAction;
@@ -35,6 +37,28 @@ class VacunaController extends Controller
         ]);
     }
 
+    public function disponibilidad(
+        Request $request,
+        ObtenerDisponibilidadAction $action,
+    ): JsonResponse {
+        $request->validate(["fecha" => ["required", "date"]]);
+
+        return response()->json([
+            "success" => true,
+            "data" => $action->execute($request->input("fecha")),
+        ]);
+    }
+
+    public function show(Vacuna $vacuna): JsonResponse
+    {
+        return response()->json([
+            "success" => true,
+            "data" => new VacunaResource(
+                $vacuna->load(["paciente", "user", "vaccine_type", "invoice"]),
+            ),
+        ]);
+    }
+
     public function store(
         StoreVacunaRequest $request,
     ): JsonResponse {
@@ -43,7 +67,7 @@ class VacunaController extends Controller
         return response()->json([
             "status" => true,
             "message" => "Vacuna registrada correctamente",
-            "data" => new VacunaResource($vacuna->load(["paciente", "user", "vaccine_type"])),
+            "data" => new VacunaResource($vacuna->load(["paciente", "user", "vaccine_type", "invoice"])),
             "errors" => (object) [],
         ], 201);
     }
@@ -57,7 +81,31 @@ class VacunaController extends Controller
         return response()->json([
             "status" => true,
             "message" => "Vacuna actualizada correctamente",
-            "data" => new VacunaResource($vacuna->load(["paciente", "user", "vaccine_type"])),
+            "data" => new VacunaResource($vacuna->load(["paciente", "user", "vaccine_type", "invoice"])),
+            "errors" => (object) [],
+        ]);
+    }
+
+    public function cambiarEstadoPago(
+        Vacuna $vacuna,
+        CambiarEstadoPagoVacunaAction $action,
+    ): JsonResponse {
+        $request = request()->validate([
+            "status" => [
+                "required",
+                "string",
+                "in:pendiente,parcial,pagado,anulado",
+            ],
+        ]);
+
+        $vacuna = $action->execute($vacuna, $request["status"]);
+
+        return response()->json([
+            "status" => true,
+            "message" => "Estado de pago de la vacuna actualizado",
+            "data" => new VacunaResource(
+                $vacuna->load(["paciente", "user", "vaccine_type", "invoice"]),
+            ),
             "errors" => (object) [],
         ]);
     }

@@ -93,6 +93,7 @@ DROP TABLE IF EXISTS `vaccine_types`;
 CREATE TABLE `vaccine_types` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(100) NOT NULL,
+  `base_price` decimal(10,2) NOT NULL DEFAULT 0.00,
   `species_id` bigint(20) unsigned DEFAULT NULL COMMENT 'si aplica solo a una especie',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
@@ -281,6 +282,7 @@ CREATE TABLE `vacunas` (
   `vaccine_type_id` bigint(20) unsigned NOT NULL,
   `cita_id` bigint(20) unsigned DEFAULT NULL,
   `vaccination_date` date NOT NULL,
+  `vaccination_time` time DEFAULT NULL,
   `next_due_date` date DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,

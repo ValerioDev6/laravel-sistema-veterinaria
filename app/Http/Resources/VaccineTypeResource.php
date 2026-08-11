@@ -12,6 +12,7 @@ class VaccineTypeResource extends JsonResource
         return [
             "id" => $this->id,
             "name" => $this->name,
+            "base_price" => $this->base_price,
             "species_id" => $this->species_id,
             "species" => $this->species?->name,
             "edit_url" => route("admin.vaccine-types.edit", $this->id),

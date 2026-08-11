@@ -123,14 +123,14 @@
 ### Módulo: Vaccine Types
 | Elemento | Archivo | Estado |
 |----------|---------|--------|
-| Form Request Store/Update | `app/Http/Requests/VaccineTypes/StoreVaccineTypeRequest.php`, `UpdateVaccineTypeRequest.php` (species_id nullable) | ✅ |
+| Form Request Store/Update | `app/Http/Requests/VaccineTypes/StoreVaccineTypeRequest.php`, `UpdateVaccineTypeRequest.php` (species_id nullable, base_price; Update usa `route('vaccine_type')` para la regla unique) | ✅ |
 | Actions | `app/Actions/VaccineTypes/CreateVaccineTypeAction.php`, `UpdateVaccineTypeAction.php`, `DeleteVaccineTypeAction.php` (valida vacunas) | ✅ |
 | Controller Api | `app/Http/Controllers/Api/Admin/VaccineTypeController.php` (index, show, store, update, destroy) | ✅ |
-| Resource | `app/Http/Resources/VaccineTypeResource.php` (incluye species name) | ✅ |
+| Resource | `app/Http/Resources/VaccineTypeResource.php` (incluye species name + base_price) | ✅ |
 | Controller Admin | `app/Http/Controllers/Admin/VaccineTypeController.php` (index, create, edit) | ✅ |
-| Vistas | `admin/vaccine-types/{index,create,edit}.blade.php` | ✅ |
-| JS | `public/js/pages/vaccine-types.js` | ✅ |
-| Seeder | `database/seeders/VaccineTypeSeeder.php` (7 vacunas, sembrado) | ✅ |
+| Vistas | `admin/vaccine-types/{index,create,edit}.blade.php` (columna/input Precio) | ✅ |
+| JS | `public/js/pages/vaccine-types.js` (recolecta base_price) | ✅ |
+| Seeder | `database/seeders/VaccineTypeSeeder.php` (7 tipos con base_price 35–70, sembrado) | ✅ |
 
 ### Módulo: Medicines
 | Elemento | Archivo | Estado |
@@ -210,16 +210,19 @@
 ### Módulo: Vacunas
 | Elemento | Archivo | Estado |
 |----------|---------|--------|
-| Form Request Store/Update | `app/Http/Requests/Vacunas/StoreVacunaRequest.php`, `UpdateVacunaRequest.php` | ✅ |
-| Action [TX] | `app/Actions/Vacunas/CreateVacunaAction.php` (vacuna + `medical_record` event_type='vacuna' + `reminder` si next_due_date) | ✅ |
-| Actions | `app/Actions/Vacunas/UpdateVacunaAction.php`, `DeleteVacunaAction.php` (valida `medical_records`) | ✅ |
-| Controller Api | `app/Http/Controllers/Api/Admin/VacunaController.php` (CRUD) | ✅ |
-| Resource | `app/Http/Resources/VacunaResource.php` (usa relación `user()`) | ✅ |
-| Controller Admin | `app/Http/Controllers/Admin/VacunaController.php` | ✅ |
-| Vistas | `admin/vacunas/{index,create,edit}.blade.php` | ✅ |
-| JS | `public/js/pages/vacunas.js` | ✅ |
-| Seeder | `database/seeders/VacunaSeeder.php` (6 vacunas, sembrado) | ✅ |
-| Rutas | Web `admin.vacunas.*` + API `admin.api.vacunas.*` | ✅ |
+| Form Request Store/Update | `app/Http/Requests/Vacunas/StoreVacunaRequest.php`, `UpdateVacunaRequest.php` (`vaccine_type_id` o `new_vaccine_type` con name/base_price/species_id; fecha: en update permite la fecha original aunque sea pasada; `after()` con ValidarDisponibilidadVacuna) | ✅ |
+| Action [TX] | `app/Actions/Vacunas/CreateVacunaAction.php` (vacuna + medical_record + reminder + invoice/pago; crea `VaccineType` inline si viene `new_vaccine_type`) | ✅ |
+| Actions | `app/Actions/Vacunas/UpdateVacunaAction.php` (TX + upsert invoice/pago), `DeleteVacunaAction.php` (valida `medical_records`) | ✅ |
+| Acción disponibilidad | `app/Actions/Vacunas/ValidarDisponibilidadVacuna.php` (horario activo + conflicto cita/vacuna, `ignorarVacunaId`) | ✅ |
+| Filtros | `app/Filters/Vacunas/` (Busqueda, Especie, Veterinario, EstadoPago, Fecha) | ✅ |
+| Controller Api | `app/Http/Controllers/Api/Admin/VacunaController.php` (CRUD + `disponibilidad` + `show`) | ✅ |
+| Resource | `app/Http/Resources/VacunaResource.php` (species, vaccination_time, vaccine_price, payment_status/total/paid) | ✅ |
+| Controller Admin | `app/Http/Controllers/Admin/VacunaController.php` (index con filtros; create/edit con disponibilidad + pago) | ✅ |
+| Vistas | `admin/vacunas/{index,create,edit}.blade.php` (filtros, bloque disponibilidad, preview mascota, sección Pago) | ✅ |
+| JS | `public/js/pages/vacunas.js` (DataTable serverSide + filtros + `initVacunaForm` disponibilidad/pago) | ✅ |
+| Seeder | `database/seeders/VacunaSeeder.php` (6 vacunas con vaccination_time, sembrado) | ✅ |
+| Migración | `2026_08_11_000001_add_time_and_price_to_vacunas_and_vaccine_types.php` (vaccination_time TIME, base_price) | ✅ |
+| Rutas | Web `admin.vacunas.*` + API `admin.api.vacunas.*` (+ `api/admin/vacunas/disponibilidad`) | ✅ |
 
 ### Módulo: Cirugías (Surgiere)
 | Elemento | Archivo | Estado |
@@ -426,6 +429,7 @@
 | CreateScheduleAction / UpdateScheduleAction / DeleteScheduleAction | VeterinarianSchedules | No | 5 |
 | CreateCitaAction (asigna created_by_user_id) / UpdateCitaAction / CambiarEstadoCitaAction / DeleteCitaAction (valida historial) | Citas | No | 5 |
 | CreateVacunaAction (vacuna + medical_record + reminder) / UpdateVacunaAction / DeleteVacunaAction (valida medical_records) | Vacunas | Sí | 6 |
+| ValidarDisponibilidadVacuna / ObtenerDisponibilidadAction (agenda unificada citas + vacunas) | Vacunas / Citas | No | 6 |
 | CreateCirugiaAction (surgiere + medical_record) / UpdateCirugiaAction / CambiarEstadoCirugiaAction / DeleteCirugiaAction (valida medical_records) | Cirugias | Sí | 6 |
 | CreateMedicalRecordAction (record + prescriptions + vital_signs) / UpdateMedicalRecordAction / DeleteMedicalRecordAction | MedicalRecords | Sí | 6 |
 | UploadAttachmentAction (ImageUploader) / DeleteAttachmentAction | MedicalRecordAttachments | No | 6 |
@@ -451,6 +455,7 @@
 | FiltrarPorBusqueda (genérico, columnas por constructor) | transversal (todos los listados) | 9 |
 | OrdenarPor (genérico, mapa ordenable + default por constructor) | transversal (todos los listados) | 9 |
 | FiltrarPorEstado (`status`) | Payments | 9 |
+| FiltrarPorBusquedaVacunas / FiltrarPorEspecieVacuna / FiltrarPorVeterinarioVacuna / FiltrarPorEstadoPagoVacuna / FiltrarPorFechaVacuna | Vacunas | 6 |
 
 ---
 
@@ -512,7 +517,7 @@
 | admin/citas/create.blade.php | create | Citas | 5 |
 | admin/citas/edit.blade.php | edit | Citas | 5 |
 | admin/citas/calendar.blade.php | calendar (FullCalendar global, drawer derecho, leyenda vets) | Citas | 5 |
-| admin/vacunas/{index,create,edit}.blade.php | index + DataTable / create / edit | Vacunas | 6 |
+| admin/vacunas/{index,create,edit}.blade.php | index + DataTable con filtros / create / edit (disponibilidad + pago) | Vacunas | 6 |
 | admin/cirugias/{index,create,edit}.blade.php | index + DataTable / create / edit | Cirugias | 6 |
 | admin/medical-records/{index,create,show}.blade.php | index + DataTable / create (recetas dinámicas) / show (adjuntos) | MedicalRecords | 6 |
 | admin/facturacion/invoices/{index,create,show}.blade.php | index + DataTable con filtros / create (servicio dinámico) / show (pagos) | Invoices | 7 |
@@ -538,6 +543,7 @@
 | Facturas polimórficas (`invoiceable_type`/`invoiceable_id`) a Cita/Vacuna/Surgiere con etiqueta `invoiceableLabel()` en el Resource | Esquema original de la tabla `invoices` | 7 |
 | Status de invoice recalculado desde los pagos (pagado/parcial/pendiente) y por anulación (anulado) vía Actions [TX] | Consistencia del saldo con los pagos | 7 |
 | Registro de pagos anidado a factura (POST invoices/{invoice}/payments); anulación de pago con PATCH /payments/{payment}/anular | El plan 7.2 integra el pago dentro de la vista show de factura, sin listado propio | 7 |
+| Vacunas replican el patrón de Citas: `vaccination_time` (TIME) nuevo en `vacunas`, selector fecha → vets → horas libres/ocupadas (agenda unificada citas+vacunas en `ObtenerDisponibilidadAction`), bloque Pago (método/adelanto obligatorios) con invoice polimórfica en la misma TX del store/update, y creación inline de un nuevo `VaccineType` desde el formulario (replica `new_service` de Citas: opción `__nuevo__` + bloque con nombre/precio/especie) | Módulo clínico rediseñado con disponibilidad real y pago desde el formulario | 6 |
 | Pipeline de filtros de facturas: `FiltrarPorEstado`, `FiltrarPorRangoFecha` (desde/hasta), `FiltrarPorOwner` | Consistencia con el pipeline de Citas | 7 |
 | El seeder de facturas factura solo servicios `completada` (citas/cirugías) y todas las vacunas con montos base fijos por tipo | Datos demo coherentes con el estado real de los servicios | 7 |
 | Los `index()` de `Api/Admin/*` que alimentan DataTable usan **`->paginate()` nativo** y devuelven un envelope agnóstico `{success, data, pagination}`; **no** devuelven el contrato DataTables. El plugin DataTables.net (CDN, ya server-side) recibe `draw/recordsTotal/recordsFiltered` reconstruidos por una función `ajax` en el JS que traduce `{success,data,pagination}`; el JS reenvía `search`/`sort_by`/`sort_dir` para conservar búsqueda global y ordenamiento por columna. Solo `index()` cambia; `store/update/destroy/show` conservan `{status,message,data,errors}` | Fix #5: elimina la clase custom `App\Filters\DataTables` (la librería JS ya incluye server-side, no hace falta wrapper PHP) | 9 |
@@ -557,3 +563,5 @@
 | Eliminadas las clases custom `App\Filters\Pipeline` y `App\Filters\DataTables`; Filters migrados al contrato real de Laravel `handle($query, Closure $next)` con `Illuminate\Pipeline\Pipeline`; los 16 `index()` usan `->paginate()` nativo con envelope `{success, data, pagination}` y el JS traduce con `ajax`-función (conserva búsqueda global y ordenamiento) | 8 Filters, 16 `Api/Admin/*Controller`, 17 `js/pages/*.js` | 2026-08-06 | `fixes/2026-08-06-pipeline-nativo-y-datatables-response.md` |
 | Lógica de búsqueda/orden extraída de los `index()` a Filters `Shared/FiltrarPorBusqueda` + `Shared/OrdenarPor` (genéricos) y a 16 `List*Action` (único dueño de armar la query, Pipeline + `paginate()`); `index()` de controllers delgados; extraído `Pagos/FiltrarPorEstado`; limpiada lógica muerta de `Admin/MedicalRecordController@index` (el blade es DataTable server-side, `$records` no se usaba) | `app/Filters/Shared/*`, `app/Filters/Pagos/*`, 16 `app/Actions/*/List*Action.php`, 16 `Api/Admin/*Controller`, 1 `Admin/*Controller` | 2026-08-06 | `fixes/2026-08-06-logica-suelta-controllers.md` |
 | Citas duplicadas en el mismo horario: diagnóstico confirmó que NO se duplica en BD (backend rechaza con 422 en Request y Action); causa raíz = bug de UI (422 silencioso en ajax.js + `appointment_time` hidden invisible). Fix: 422 muestra SIEMPRE Swal con el mensaje real backend en la capa AJAX compartida (título por método), se quitaron los Swal redundantes de 11 deletes | `public/js/config/ajax.js`, 11 `js/pages/*.js` (breeds, vaccine-types, usuarios, vacunas, citas, cirugias, medicines, pacientes, services, species, owners) | 2026-08-10 | `fixes/2026-08-06-citas-duplicadas.md` |
+| UI del módulo Vacunas replicando Citas: filtros (mascota/especie/veterinario/estado de pago/fecha), disponibilidad de veterinarios (fecha→vets→horas, agenda unificada con citas), sección Pago obligatoria (invoice + payment en TX); + `vaccination_time` y `base_price` en BD (migración + seeders) + filtros de Vacunas + CRUD vaccine-types con precio. Se corrigió además el bug preexistente de `UpdateVaccineTypeRequest` (`{$this->vaccineType->id}` era null → la regla unique usaba `route('vaccine_type')`) | `app/Actions/Vacunas/*`, `app/Filters/Vacunas/*`, `app/Http/Requests/Vacunas/*`, `VacunaResource`, `Api/Admin/VacunaController`, `Admin/VacunaController`, `routes/api.php`, `admin/vacunas/{index,create,edit}.blade.php`, `public/js/pages/vacunas.js`, `app/Http/Requests/VaccineTypes/UpdateVaccineTypeRequest.php`, `database/migrations/2026_08_11_000001_add_time_and_price_to_vacunas_and_vaccine_types.php`, `database/seeders/{VaccineTypeSeeder,VacunaSeeder}.php`, `db_sistema_veterinaria.sql` | 2026-08-11 | `fixes/2026-08-11-vacunas-ui.md` |
+| Update de Vacunas roto: `UpdateVacunaRequest` con `after_or_equal:today` impedía editar las 6 vacunas del seed (todas con fecha pasada → 422 siempre). Fix: la regla de `vaccination_date` en update es una Closure que permite la fecha original pasada; el input `min` de la vista edit usa la fecha original; la vacuna de Kiara movida de domingo (sin horario) a viernes; scripts reordenados (datos de init antes del IIFE de vacunas.js para que preview/preselección apliquen al cargar) | `app/Http/Requests/Vacunas/UpdateVacunaRequest.php`, `resources/views/admin/vacunas/edit.blade.php`, `database/seeders/VacunaSeeder.php` | 2026-08-11 | `fixes/2026-08-11-vacunas-ui.md` |

@@ -263,6 +263,12 @@
                                 <span data-key="t-medical-records">Historial Clínico</span>
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link menu-link" href="{{ route('admin.calendario.index') }}">
+                                <i class="ri-calendar-2-line"></i>
+                                <span data-key="t-calendar">Calendario</span>
+                            </a>
+                        </li>
 
                         <li class="menu-title">
                             <span data-key="t-finance">Facturación</span>

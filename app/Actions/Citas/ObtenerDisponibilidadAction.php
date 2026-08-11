@@ -29,8 +29,9 @@ class ObtenerDisponibilidadAction
             ->get(["vs.veterinarian_id", "vs.start_time", "vs.end_time"])
             ->groupBy("veterinarian_id");
 
-        // 3. Horas ya ocupadas ese día por veterinario (citas activas).
+        // 3. Horas ya ocupadas ese día por veterinario (citas activas + vacunas).
         //    appointment_time es TIME, viene como "09:30:00"; se normaliza a H:i.
+        //    Las vacunas también ocupan la agenda del médico (agenda unificada).
         $ocupadas = DB::table("citas as c")
             ->select("c.veterinarian_id", "c.appointment_time")
             ->where("c.appointment_date", "=", $fecha)
@@ -44,6 +45,22 @@ class ObtenerDisponibilidadAction
                         true,
                 ],
             );
+
+        $vacunas = DB::table("vacunas as v")
+            ->select("v.veterinarian_id", "v.vaccination_time")
+            ->where("v.vaccination_date", "=", $fecha)
+            ->whereNotNull("v.vaccination_time")
+            ->get()
+            ->mapWithKeys(
+                fn($v) => [
+                    $v->veterinarian_id .
+                        "|" .
+                        \Carbon\Carbon::parse($v->vaccination_time)->format("H:i") =>
+                        true,
+                ],
+            );
+
+        $ocupadas = $ocupadas->union($vacunas);
 
         $result = [];
 

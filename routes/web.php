@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\BranchController;
 use App\Http\Controllers\Admin\BreedController;
+use App\Http\Controllers\Admin\CalendarioController;
 use App\Http\Controllers\Admin\CitaController;
 use App\Http\Controllers\Admin\CirugiaController;
 use App\Http\Controllers\Admin\InvoiceController;
@@ -44,6 +45,11 @@ Route::middleware("auth")
     ->prefix("admin")
     ->name("admin.")
     ->group(function () {
+        Route::get("calendario", [
+            CalendarioController::class,
+            "index",
+        ])->name("calendario.index");
+
         Route::get("branches", [BranchController::class, "index"])->name(
             "branches.index",
         );

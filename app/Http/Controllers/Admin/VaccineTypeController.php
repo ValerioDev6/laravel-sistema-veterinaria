@@ -11,7 +11,11 @@ class VaccineTypeController extends Controller
 {
     public function index(): View
     {
-        return view("admin.vaccine-types.index", ["title" => "Tipos de Vacuna"]);
+        return view("admin.vaccine-types.index", [
+            "title" => "Tipos de Vacuna",
+            "species" => $this->species(),
+            "nextId" => (VaccineType::max("id") ?? 0) + 1,
+        ]);
     }
 
     public function create(): View

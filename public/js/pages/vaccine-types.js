@@ -42,6 +42,8 @@
         const datos = new FormData();
         const name = form.elements["name"];
         if (name) datos.append("name", name.value.trim());
+        const base_price = form.elements["base_price"];
+        if (base_price) datos.append("base_price", base_price.value.trim());
         const species_id = form.elements["species_id"];
         if (species_id) datos.append("species_id", species_id.value.trim());
         return datos;
@@ -50,6 +52,14 @@
     const tableEl = document.getElementById("table-vaccine-types");
     if (tableEl) {
         let dataTable = null;
+        let terminoBusqueda = "";
+        let terminoBusquedaTimer = null;
+
+        function getFilters() {
+            const filtros = {};
+            if (terminoBusqueda) filtros.search = terminoBusqueda;
+            return filtros;
+        }
 
         function cargarDatos() {
             const url = "/admin/vaccine-types";
@@ -59,18 +69,19 @@
                     serverSide: true,
                     processing: true,
                     pageLength: 15,
+                    searching: false,
+                    lengthChange: false,
+                    info: false,
                     ajax: function (data, callback) {
                         const params = {
                             per_page: data.length,
                             page: Math.floor(data.start / data.length) + 1,
                         };
-                        if (data.search && data.search.value) {
-                            params.search = data.search.value;
-                        }
                         if (data.order && data.order.length) {
                             params.sort_by = data.order[0].column;
                             params.sort_dir = data.order[0].dir;
                         }
+                        Object.assign(params, getFilters());
                         ajax.get(url, params).then((res) => {
                             callback({
                                 draw: data.draw,
@@ -79,6 +90,12 @@
                                 data: res.data.map((v) => ({
                                     id: v.id,
                                     name: v.name,
+                                    precio:
+                                        "<span class='fw-semibold'>S/ " +
+                                        (v.base_price
+                                            ? Number(v.base_price).toFixed(2)
+                                            : "0.00") +
+                                        "</span>",
                                     species: v.species || "Todas",
                                     acciones: renderAcciones(v),
                                 })),
@@ -91,6 +108,7 @@
                     columns: [
                         { data: "id" },
                         { data: "name" },
+                        { data: "precio" },
                         { data: "species" },
                         { data: "acciones", orderable: false },
                     ],
@@ -148,8 +166,60 @@
             });
         }
 
+        $("#busquedaVaccineTypes").on("input", function () {
+            const termino = this.value;
+            clearTimeout(terminoBusquedaTimer);
+            terminoBusquedaTimer = setTimeout(function () {
+                terminoBusqueda = termino.trim();
+                dataTable.ajax.reload();
+            }, 350);
+        });
+
+        $("#busquedaVaccineTypes").on("keydown", function (e) {
+            if (e.key === "Enter") e.preventDefault();
+        });
+
+        const formFiltros = document.getElementById("formFiltrosVaccineTypes");
+        if (formFiltros) {
+            formFiltros.addEventListener("submit", (e) => {
+                e.preventDefault();
+                terminoBusqueda = document
+                    .getElementById("busquedaVaccineTypes")
+                    .value.trim();
+                cargarDatos();
+            });
+            document
+                .getElementById("btnLimpiarFiltros")
+                ?.addEventListener("click", () => {
+                    formFiltros.reset();
+                    terminoBusqueda = "";
+                    cargarDatos();
+                });
+        }
+
         cargarDatos();
     }
+
+    const tabFormular = document.getElementById("tabFormularVacunas-tab");
+
+    function activarTabFormular() {
+        if (tabFormular && window.bootstrap) {
+            new bootstrap.Tab(tabFormular).show();
+        }
+    }
+
+    function activarTabListado() {
+        const tabListado = document.querySelector(
+            '[data-bs-toggle="tab"][href="#tabListadoVaccineTypes"]',
+        );
+        if (tabListado && window.bootstrap) {
+            new bootstrap.Tab(tabListado).show();
+        }
+    }
+
+    document
+        .getElementById("btnNuevoVaccineType")
+        ?.addEventListener("click", activarTabFormular);
 
     const formCrear = document.getElementById("formCrearVaccineType");
     if (formCrear) {
@@ -162,7 +232,10 @@
             ajax.post("/admin/vaccine-types", datos)
                 .then((res) => {
                     Swal.fire("Listo", res.message, "success").then(() => {
-                        window.location.href = "/admin/vaccine-types";
+                        activarTabListado();
+                        formCrear.reset();
+                        const dataTable = $("#table-vaccine-types").DataTable();
+                        if (dataTable) dataTable.ajax.reload();
                     });
                 })
                 .catch((error) => {

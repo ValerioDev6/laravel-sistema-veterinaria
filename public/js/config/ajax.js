@@ -32,7 +32,29 @@
 
                 const error = { status: xhr.status, response };
 
+                // Errores de validación (422): la respuesta siempre trae el
+                // mensaje real del backend en `message` y los detalles en
+                // `errors`. Se muestra SIEMPRE con SweetAlert2 (por si el
+                // campo afectado es invisible/oculto, ej. appointment_time),
+                // y ademas se rechaza la promesa para que la pagina pueda
+                // pintar el detalle inline (is-invalid) si lo desea.
                 if (xhr.status === 422) {
+                    const esEliminacion = method.toUpperCase() === "DELETE";
+                    const primerMensaje =
+                        response?.message ||
+                        Object.values(response?.errors || {}).flat()[0] ||
+                        (esEliminacion
+                            ? "No se pudo eliminar el registro."
+                            : "Revisa los campos del formulario.");
+                    if (typeof Swal !== "undefined") {
+                        Swal.fire({
+                            icon: "warning",
+                            title: esEliminacion
+                                ? "No se pudo eliminar"
+                                : "No se pudo guardar",
+                            text: primerMensaje,
+                        });
+                    }
                     reject(error);
                     return;
                 }

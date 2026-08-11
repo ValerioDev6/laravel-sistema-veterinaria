@@ -19,12 +19,40 @@ class UpdateCitaRequest extends FormRequest
         return [
             "pet_id" => ["required", "integer", "exists:pacientes,id"],
             "veterinarian_id" => ["required", "integer", "exists:users,id"],
-            "service_id" => ["nullable", "integer", "exists:services,id"],
+            "service_id" => [
+                "required_without:new_service",
+                "nullable",
+                "integer",
+                "exists:services,id",
+            ],
+            "new_service" => ["required_without:service_id", "nullable", "array"],
+            "new_service.name" => ["required_with:new_service", "string", "max:100"],
+            "new_service.category" => [
+                "required_with:new_service",
+                "in:consulta,vacunacion,cirugia,estetica,otro",
+            ],
+            "new_service.base_price" => [
+                "required_with:new_service",
+                "numeric",
+                "min:0",
+            ],
+            "new_service.duration_minutes" => [
+                "required_with:new_service",
+                "integer",
+                "min:5",
+                "max:600",
+            ],
             "appointment_date" => ["required", "date", "after_or_equal:today"],
             "appointment_time" => ["required", "date_format:H:i"],
             "reason" => ["nullable", "string"],
             "reprogramming" => ["boolean"],
-            "status" => ["required", "string", "in:pendiente,confirmada,completada,cancelada"],
+            "status" => ["nullable", "string", "in:pendiente,confirmada,completada,cancelada"],
+            "payment_method" => [
+                "required",
+                "string",
+                "in:efectivo,tarjeta,transferencia,otro",
+            ],
+            "advance_amount" => ["required", "numeric", "min:0.01"],
         ];
     }
 

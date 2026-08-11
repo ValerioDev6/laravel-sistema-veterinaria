@@ -194,15 +194,7 @@
                         Swal.fire("Eliminado", res.message, "success");
                         cargarDatos();
                     })
-                    .catch((error) => {
-                        if (error.status === 422) {
-                            Swal.fire(
-                                "No se pudo eliminar",
-                                error.response?.errors?.species?.[0],
-                                "warning",
-                            );
-                        }
-                    });
+                    .catch(() => {});
             });
         }
 

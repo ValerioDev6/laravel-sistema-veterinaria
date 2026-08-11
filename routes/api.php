@@ -59,6 +59,10 @@ Route::prefix("admin")
             "update",
             "destroy",
         ]);
+        Route::get("citas/disponibilidad", [
+            CitaController::class,
+            "disponibilidad",
+        ])->name("citas.disponibilidad");
         Route::patch("citas/{cita}/estado", [
             CitaController::class,
             "cambiarEstado",

@@ -6,6 +6,7 @@ use App\Actions\Citas\CambiarEstadoCitaAction;
 use App\Actions\Citas\CreateCitaAction;
 use App\Actions\Citas\DeleteCitaAction;
 use App\Actions\Citas\ListCitasAction;
+use App\Actions\Citas\ObtenerDisponibilidadAction;
 use App\Actions\Citas\UpdateCitaAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Citas\StoreCitaRequest;
@@ -37,6 +38,18 @@ class CitaController extends Controller
                 "has_more" =>
                     $paginated->currentPage() < $paginated->lastPage(),
             ],
+        ]);
+    }
+
+    public function disponibilidad(
+        Request $request,
+        ObtenerDisponibilidadAction $action,
+    ): JsonResponse {
+        $request->validate(["fecha" => ["required", "date"]]);
+
+        return response()->json([
+            "success" => true,
+            "data" => $action->execute($request->input("fecha")),
         ]);
     }
 

@@ -449,3 +449,183 @@ Audita `app/Http/Controllers/Api/Admin/**` completo. Para cada `index()` que ten
 **Verificado:** `php -l` OK, `view:cache` OK, `node --check` OK (pacientes.js, species-breeds-inline.js); `tinker` confirma 4 tabs en orden correcto, botones Regresar/Limpiar presentes, sin `novalidate`, `required` presente, sin tablas de especies/razas; `create.blade.php` OK (Regresar → `/admin/pacientes`). Backend sin cambios funcionales (solo se agregó `owners` a la vista index para el formulario inline).
 
 ---
+
+## Prompt #14 — 2026-08-10
+
+**Tipo:** Rediseño completo del flujo de creación de Citas (pago obligatorio, disponibilidad por fecha, servicio nuevo inline)
+
+**Contexto:** El usuario marcó el create de citas como "basura": se agendaba una cita sin pago, sin mostrar el costo del servicio, con selects planos. Rechazó la idea de "cita sin pago" ("CÓMO VAS A HACER UNA CITA SIN PAGO DIOS!!") y pidió que el pago sea la prioridad, mostrando el costo del servicio, con capacidad de crear un servicio nuevo inline (ej. "cortar uñas") si no existe en el catálogo, y un flujo con disponibilidad: **Mascota → Servicio → Fecha → Disponibilidad (vet + horas libres) → Motivo → Pago**.
+
+**Cambios:**
+
+1. **Backend — `StoreCitaRequest`**: reglas para `new_service` (name, category, base_price, duration_minutes, con `required_without:service_id`/`required_with`) y pago obligatorio (`payment_method` en efectivo/tarjeta/transferencia/otro + `advance_amount` min 0.01). `status` pasa a nullable (lo define el Action). Se conserva la validación de horario/cruce de citas.
+2. **Backend — `CreateCitaAction`** (era "muy pobre"): ahora envuelto en `DB::transaction()`:
+   - Si no llega `service_id` pero sí `new_service`, crea el `Service` primero.
+   - Crea la `Cita`.
+   - Genera `Invoice` (`invoiceable_type = cita`, owner del paciente, total = `base_price` del servicio, `remaining_balance`, status `pagado`/`parcial`, `issued_at = appointment_date`).
+   - Genera `Payment` (amount = adelanto, método, status `pagado`, `paid_at = now()`).
+   - Si el adelanto cubre el total, promueve la cita a `confirmada`.
+   - Método `registrarPago` estático (llamado con `self::`) para ser compatible con `execute` estático.
+3. **Backend — `ObtenerDisponibilidadAction`** (nuevo): dado `fecha`, toma `veterinarian_schedules` activos del día (`day_of_week`), genera slots de 30 min (start <= t < end) y descarta los ocupados por citas pendiente/confirmada. Agrupa por veterinario (maneja horarios mañana+tarde). Expone `veterinarian_id`, `veterinarian`, `start_time`, `end_time`, `slots`.
+4. **API — `CitaController@disponibilidad`** + ruta `GET api/admin/citas/disponibilidad` (registrada antes del `apiResource` para no colisionar con `{cita}`).
+5. **Web — `Admin/CitaController@create`**: pasa `services` como colección con `base_price`/`duration_minutes` (nuevo `serviciosConPrecio()`) y `categories`; se mantiene `services()` (array id→nombre) para el edit.
+6. **Vista `admin/citas/create.blade.php`** (rediseñada, 6 bloques):
+   - Mascota (select).
+   - Servicio con **costo visible en cada opción** (`name — S/ base_price`) + opción **"＋ Crear nuevo servicio"** que despliega campos inline (nombre, categoría, precio, duración) en `#bloqueNuevoServicio`.
+   - Fecha (min hoy) → al cambiarla consulta disponibilidad y puebla `#veterinarian_id` + horas libres como botones (`#contenedorHoras`).
+   - Motivo.
+   - **Pago (obligatorio)**: total a pagar readonly (auto-calculado del servicio), método de pago, adelanto/monto.
+   - Botón "Guardar y cobrar".
+7. **JS `public/js/pages/citas.js`**:
+   - `recolectarDatos`: excluye `service_id` cuando vale `__nuevo__`, incluye `payment_method`, `advance_amount` y `new_service[`*`]` si aplica.
+   - `pintarErroresValidacion`: mapea errores `new_service.name` → `[name="new_service[name]"]`.
+   - Bloque `formCrearCita`: `actualizarTotal()`, toggle del bloque de servicio nuevo, `cargarDisponibilidad()` (GET disponibilidad + render de botones de hora), validación adelanto ≤ total, submit AJAX a `/admin/citas`.
+
+**Verificado:** `php -l` OK en Request/Actions/Controllers; `php artisan view:cache` OK; `node --check` OK en `citas.js`; `route:list` muestra `admin.api.citas.disponibilidad`; tinker: disponibilidad devuelve slots por vet sin duplicados, crear cita con servicio nuevo + pago completo genera Invoice `pagado` (saldo 0) + Payment, y con adelanto parcial genera Invoice `parcial` (saldo = total − adelanto) + Payment; render de vista OK (`BLOQUE_NUEVO_OK`, `DISPO_OK`, `PAGO_OK`). Datos de prueba eliminados al final.
+
+---
+
+## Prompt #15 — 2026-08-10
+
+**Tipo:** Rediseño adaptativo del create de Citas (flujo: veterinarios primero con check/ocupado, preview de mascota, pago como prioridad)
+
+**Contexto:** El usuario marcó el create de citas como "basura" de nuevo, pero esta vez por el diseño: pidió que sea **adaptable/responsive** (no tanto espacio libre, que se adapte solo), que **primero esté la búsqueda del veterinario** (al filtrar por fecha, si un veterinario está disponible que salga un check para aplicarlo; si está ocupado que salga tachado/"ocupado"), que al seleccionar la mascota aparezca algo de su data (foto), que los servicios sigan manejándose como principal, y que **el pago sea la prioridad** (la gente no suele pagar completo; lo que importa es que haya adelanto/pago). El usuario aclaró que el precio del servicio "ya no importa", continuar.
+
+**Cambios:**
+
+1. **Backend — `ObtenerDisponibilidadAction`**: ahora devuelve **todos** los veterinarios con horario activo ese día (antes saltaba los ocupados). Cada entrada incluye `disponible` (bool: quedan slots libres) y `slots` (vacío si ocupado). El frontend decide cómo mostrarlos (check vs tachado).
+2. **Web — `Admin/CitaController@create`**: pasa además `pacientesData` (nuevo método privado con `with(["species","breed","owner"])`: id, name, photo, species, breed, gender, weight, owner) para el preview de la mascota sin petición extra.
+3. **Vista `admin/citas/create.blade.php`** (layout adaptativo a 12 columnas, sin `col-lg-8`):
+   - Header con badge "Cita con pago".
+   - **Fecha** → dispara disponibilidad.
+   - **Veterinarios disponibles**: grid responsive `col-md-4 col-lg-3` de cards; cada card con nombre, horario y badge Disponible/Ocupado; los disponibles tienen botón "✓ Aplicar"; los ocupados salen tachados (`text-decoration-line-through`) con opacidad y botón deshabilitado "Sin horas". Al aplicar se muestra bloque de horas libres (`#bloqueHoras` + `#contenedorHoras`).
+   - **Mascota** con preview: al seleccionar se muestra foto (o icono paw) + especie/raza/género/peso + dueño (`#bloquePreviewMascota`).
+   - **Servicio** (principal) con costo visible + opción "＋ Crear nuevo servicio" inline.
+   - **Motivo**.
+   - **Pago (prioridad, obligatorio)**: total readonly auto-calculado, método, adelanto.
+4. **JS `public/js/pages/citas.js`** (bloque `formCrear`):
+   - Eliminados los selects de veterinario/hora en favor de cards: `renderVetCard()` (disponible/ocupado), `bindVetCards()`, `aplicarVet()` (resalta card seleccionada, setea `veterinarian_id`, muestra `#bloqueHoras`), `renderHoras()` con botones de hora (setean `appointment_time`).
+   - Preview de mascota en el `change` del select: usa `window.citasPacientesData` inyectado por la vista.
+   - Se mantiene: `actualizarTotal()` (costo del servicio o del nuevo), validación adelanto ≤ total, submit AJAX con `recolectarDatos` (excluye `__nuevo__`, envía `new_service[*]`, `payment_method`, `advance_amount`).
+
+**Verificado:** `php -l` OK (Actions/Controllers), `php artisan view:cache` OK, `node --check` OK en `citas.js`; tinker: disponibilidad devuelve `disponible=SI/NO` correcto (vet con todas las horas tomadas → `disponible=NO`, slots=[]; vet libre → `disponible=SI`), render de vista con todos los bloques (`contenedorDisponibilidad`, `contenedorHoras`, `bloquePreviewMascota`, `citasPacientesData`, pago OK) y 11 mascotas en `pacientesData`. Datos de prueba eliminados.
+
+---
+
+## Prompt #16 — 2026-08-10
+
+**Tipo:** Actualización del edit de Citas al mismo diseño del create (disponibilidad, preview de mascota, servicio nuevo, pago)
+
+**Contexto:** El usuario pidió que el editar de citas (`/admin/citas/{id}/edit`) sea igual al create rediseñado (los dos formularios son "casi iguales"), es decir: flujo con veterinarios disponibles por fecha (check/ocupado), preview de mascota, servicio como principal con costo y opción de crear servicio nuevo inline, y bloque de pago (obligatorio). Solo que en editar se permite cambiar el estado de la cita y todo llega precargado.
+
+**Cambios:**
+
+1. **Backend — `UpdateCitaRequest`**: ahora espeja a `StoreCitaRequest`: reglas para `new_service` (name, category, base_price, duration_minutes) y pago obligatorio (`payment_method` + `advance_amount` min 0.01); `status` nullable. Mantiene `validarHorario` con exclusión de la propia cita (`id !=`).
+2. **Backend — `UpdateCitaAction`**: envuelto en `DB::transaction()`:
+   - Crea `Service` nuevo si llega `new_service` sin `service_id`.
+   - Actualiza la cita.
+   - **Actualiza o crea la `Invoice`** (cita) con total = `base_price`, saldo y status `pagado`/`parcial`.
+   - **Actualiza o crea el `Payment`** de esa invoice (monto, método, status `pagado`).
+   - Si el adelanto cubre el total, promueve la cita a `confirmada`.
+3. **Web — `Admin/CitaController@edit`**: pasa `pacientesData`, `serviciosConPrecio`, `categories` y `invoice` (con `payments`) para precargar el bloque de pago; ya no pasa `veterinarians`. Se elimina el método privado `services()` (sin uso).
+4. **Vista `admin/citas/edit.blade.php`**: misma estructura adaptativa que el create (12 columnas, badge "Cita con pago"), con:
+   - Fecha y **Estado** (pendiente/confirmada/completada/cancelada) precargados.
+   - Disponibilidad de veterinarios + horas, con `veterinarian_id`/`appointment_time` ocultos precargados.
+   - Mascota, Servicio (con `@selected`), bloque "＋ Nuevo servicio", preview de mascota.
+   - Pago precargado desde la invoice: total readonly, método (`@selected` según payment), adelanto (`value` del payment).
+   - `window.citaEditarInit = { fecha, veterinario, hora }` para preseleccionar el veterinario y su hora en el JS.
+5. **JS `public/js/pages/citas.js`**: refactorizado a una única función `initCitaForm(form)` compartida por create y edit:
+   - Detecta edición por `form.id` y usa `PUT /admin/citas/{id}` (con `form.dataset.id`) o `POST`.
+   - En edición: al cargar disponibilidad llama `preseleccionarEnEdicion()` (aplica el veterinario guardado y resalta su hora `btn-primary`).
+   - `renderPreviewMascota()`, `actualizarTotal()`, validación adelanto ≤ total, `recolectarDatos` (excluye `__nuevo__`, envía `new_service[*]`, `payment_method`, `advance_amount`, y `status` si existe).
+
+**Verificado:** `php -l` OK (Request/Action/Controllers), `php artisan view:cache` OK, `node --check` OK en `citas.js`; tinker: render del edit con datos precargados (fecha, `payment_method` efectivo seleccionado, adelanto 100, total 200, `contenedorDisponibilidad`, `citaEditarInit`), `UpdateCitaAction` actualiza hora/motivo e invoice/payment (pago 150 tarjeta → saldo 50), y se restauró la cita 37 a su estado original (hora 09:00, pago 100 efectivo, saldo 100). Datos de prueba restaurados.
+
+---
+## Prompt #17 — 2026-08-10
+
+**Tipo:** Filtro de disponibilidad por fecha — veterinarios sin horario deben salir como "No disponible" (tachado), con lógica de query builder / SQL
+
+**Contexto:** El usuario detectó que el filtro de disponibilidad del create/edit de citas era incorrecto: al elegir fecha salía "Disponible" en veterinarios que realmente no lab<br>boran ese día (los 3 veterinarios tenían exactamente el mismo horario Lun–Vie 09–13/15–19 en BD, por eso dr.ramos "siempre parecía disponible"). Pidió:
+- Que cada veterinario tenga su horario realista propio (Lun–Vie o Lun–Sáb, horarios distintos: 07:00–21:00, 08:00–18:30, 09:00–19:00).
+- Que la consulta sea más compleja usando query builder / SQL (`DB::table`) y valide de verdad si el médico está o no disponible ese día.
+- Que un veterinario sin horario el día filtrado salga como **"No disponible"** (tachado, `sin_horario`), no que desaparezca ni que diga solo "Ocupado".
+- Se usó como referencia (solo lógica, no estructura) un ejemplo TypeScript con `queryRunner`/`HorarioCitas` que crea cita + historial + pago en transacción; nuestra implementación tiene menos tablas.
+
+**Cambios:**
+
+1. **`app/Actions/Citas/ObtenerDisponibilidadAction.php`** (reescrito):
+   - Usa `User::role("Veterinario")->where("is_active", true)` para partir de **todos** los veterinarios (no solo los que tienen schedule).
+   - Horarios del día con **`DB::table("veterinarian_schedules")`** (query builder raw) agrupados por `veterinarian_id`.
+   - Cruza con citas ocupadas (`pendiente`/`confirmada`) de la fecha.
+   - Devuelve por cada vet: `horario` ("07:00 – 21:00" o "Sin horario este día"), `slots`, y un nuevo campo `estado` con 3 valores: `disponible` (tiene slots libres), `ocupado` (tiene horario pero todas las horas tomadas), `sin_horario` (no se le asignó día).
+   - `generarSlots` sigue generando slots de 30 min excluyendo ocupados; `sinHorario()` arma el arreglo con `start_time`/`end_time` null.
+2. **`database/seeders/VeterinarianScheduleSeeder.php`** (reescrito): perfiles de horario por índice del vet:
+   - dr.torres: Lun–Vie 09:00–13:00 y 15:00–19:00.
+   - dr.ramos: **Lun–Sáb** 08:00–12:30 y 14:00–18:30.
+   - dr.paredes: Lun–Vie 07:00–12:00 y 16:00–21:00.
+   - Se limpiaron los horarios viejos (que eran idénticos para los 3) antes de reseedar.
+3. **`public/js/pages/citas.js`** — `renderVetCard` ahora usa el campo `estado` y muestra **3 estados**: badge "Disponible" (verde + botón Aplicar), "Ocupado" (rojo tachado + "Sin horas"), **"Sin horario"** (gris tachado + "No disponible", card `opacity-50`); muestra `vet.horario` guardado por el backend.
+
+**Verificado:**
+- tinker: reseed de horarios = dr.torres 10, dr.ramos 12 (incluye sábado), dr.paredes 10 registros.
+- tinker `execute('2026-08-24')` (lunes): 3 disponibles con sus horarios distintos (slots 15/18/20).
+- `2026-08-29` (sábado): dr.paredes y dr.torres `sin_horario`, solo dr.ramos disponible.
+- `2026-08-30` (domingo): los 3 `sin_horario`.
+- HTTP real con `php artisan serve`: `GET /api/admin/citas/disponibilidad?fecha=...` devuelve el trio con `estado`/`horario`/`slots` correctos (ok para lunes, sábado y domingo).
+
+---
+## Prompt #17c — 2026-08-10 (Fix #7: diagnóstico + fix citas duplicadas en mismo horario)
+
+**Tipo:** Fix de bug — diagnóstico primero, causa confirmada antes de corregir
+
+**Prompt de referencia:** `fixes/07_fix.md`
+
+**Síntoma reportado:** al registrar una cita para un veterinario en una fecha/hora donde ya existe otra cita activa del mismo veterinario, el sistema "deja pasar" el registro — no bloquea como debería.
+
+**Diagnóstico (ordenado según el fix doc):**
+
+1. **Paso 1 — ¿Se duplica en BD? NO.** Se reprodujo el caso y se revisó `citas`: solo queda 1 registro. El backend rechaza con 422 en ambas capas: `StoreCitaRequest`/`UpdateCitaRequest` (regla `validarHorario`) y `ValidarDisponibilidadCita::execute()` dentro de la transacción de `Create/UpdateCitaAction`. Log temporal en la Action confirmó que el FormRequest bloquea antes de llegar a la Action para el par ocupado.
+2. **Paso 2B — Bug de UI (causa raíz).** El 422 llegaba al frontend pero `public/js/config/ajax.js` hacía solo `reject(error)` **silencioso**, y `citas.js` `.catch` pintaba inline en `appointment_time`, que es `<input type="hidden">` (invisible). El usuario creía que el sistema "dejaba pasar".
+3. **Falso positivo aclarado:** la cita 39 no era el bug; la cita 37 está a las `07:00:00`, así que `09:00` de ese día estaba libre. La cita 39 fue creada por tests del prompt #17b.
+
+**Fix aplicado (solo UI, causa confirmada):**
+
+- `public/js/config/ajax.js`: todo 422 muestra SIEMPRE SweetAlert2 con `response?.message` || primer `errors` || fallback; título según método (DELETE = "No se pudo eliminar", resto = "No se pudo guardar"); luego `reject(error)` para que la página siga pintando inline. Single source of truth para todos los módulos.
+- Se eliminaron los Swal redundantes de `.catch(422)` en los deletes de 11 módulos (breeds, vaccine-types, usuarios, vacunas, citas, cirugias, medicines, pacientes, services, species, owners) para evitar doble popup (el Swal global ya los cubre).
+- **Paso 2A NO aplicó** (no se normalizó formato de hora en backend): no había bug de backend confirmado; el diagnóstico dio que la validación ya funciona.
+- Log temporal **quitado** de `ValidarDisponibilidadCita.php`.
+
+**Verificado:**
+- `node --check` OK en `ajax.js` y 11 `pages/*.js`; `php -l` OK en `ValidarDisponibilidadCita.php` (log removido).
+- Backend ya verificado en #17b (POST duplicado → 422 "El veterinario ya tiene una cita a esa hora."; no inserta).
+- Documentación creada en `fixes/2026-08-06-citas-duplicadas.md`; `project-map.md` actualizado (decisión técnica 422 en capa AJAX + fila de fix).
+- Verificación visual del Swal en navegador: pendiente de confirmación manual del usuario.
+
+---
+## Prompt #17b — 2026-08-10 (corrección del filtro + validaciones en store)
+
+**Tipo:** Bugfix del filtro de disponibilidad + validaciones de disponibilidad dentro del store
+
+**Contexto:** El usuario insistió (a tono confuso, con ejemplo TypeScript/queryRunner de referencia) que el filtro seguía mal: "la consulta tiene que hacer consulta y validaciones en store", "el filtro me trae los veterinarios pero no me trae si ya está ocupado o no es el día". Pedía (1) query builder/SQL real con joins que marque ocupación por slot, y (2) que las validaciones de disponibilidad se ejecuten también en la creación/edición de la cita, no solo en el Request. Quería el patrón del ejemplo TS: consultas complejas y guardados múltiples (cita + pago) en transacción con chequeos.
+
+**Cambios:**
+
+1. **Nuevo `app/Actions/Citas/ValidarDisponibilidadCita.php`**: validación reutilizable con `DB::table` que (a) verifica que el vet tenga horario activo ese día de la semana (start <= time < end) y (b) que no exista otra cita activa (pendiente/confirmada) del mismo vet en la misma fecha+hora, ignorando `$ignorarCitaId` (para update). Lanza `ValidationException` con el mensaje correspondiente.
+2. **`CreateCitaAction`**: llama `ValidarDisponibilidadCita::execute($data)` dentro de la transacción (antes de crear service/cita).
+3. **`UpdateCitaAction`**: llama `ValidarDisponibilidadCita::execute($data, $cita->id)` dentro de la transacción.
+4. **`ObtenerDisponibilidadAction`** (reescrito con query builder real):
+   - Vets vía `DB::table('users')->join('model_has_roles')->join('roles')` (rol Veterinario, activos).
+   - Schedules del día con `DB::table('veterinarian_schedules')` agrupados por vet.
+   - Ocupadas con `DB::table('citas')` ese día (pendiente/confirmada).
+   - Por cada vet devuelve `slots_detalle` (cada slot con `hora`, `ocupado`, `disponible`), además de `slots` (solo libres), `horario`, `estado` (disponible/ocupado/sin_horario).
+   - **Bug encontrado y corregido**: la columna `appointment_time` es `TIME`, el query builder raw devuelve `"09:30:00"` (con segundos) mientras las claves se arman con `"09:30"` — por eso la ocupación no matcheaba. Se normaliza con `Carbon::parse(...)->format("H:i")` en el action y con `whereRaw('TIME(appointment_time) = ?')` en la validación.
+   - `VeterinarianScheduleSeeder` ya quedó con perfiles distintos por vet (dr.torres Lun–Vie 09–13/15–19; dr.ramos Lun–Sáb 08–12:30/14–18:30; dr.paredes Lun–Vie 07–12/16–21).
+
+**Verificado:**
+- `php -l` OK en action, seeder y validación; `node --check` OK en citas.js.
+- tinker: `2026-08-24` → dr.torres `slots_detalle` marca `09:00` como ocupado (cita 37), 15 libres; domingo → 3 `sin_horario`; sábado → solo dr.ramos disponible.
+- `ValidarDisponibilidadCita`: rechaza 09:00 ocupada, acepta 09:30 libre, y con `ignorarCitaId=37` permite el mismo horario (update).
+- HTTP real: `GET /api/admin/citas/disponibilidad?fecha=2026-08-24` muestra `ocupados=['09:00']` en dr.torres; `POST /api/admin/citas` con hora ocupada → 422 "El veterinario ya tiene una cita a esa hora"; hora fuera de horario (14:30) → 422 correcto; hora libre (15:30) → 201. Cita temporal de prueba (id 38) eliminada después (citas quedan 9: seeds 1–8 + cita 37).
+
+---

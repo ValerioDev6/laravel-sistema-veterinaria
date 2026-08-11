@@ -27,19 +27,27 @@ class CitaController extends Controller
         return view("admin.citas.create", [
             "title" => "Nueva Cita",
             "pacientes" => $this->pacientes(),
-            "veterinarians" => $this->veterinarians(),
-            "services" => $this->services(),
+            "pacientesData" => $this->pacientesData(),
+            "services" => $this->serviciosConPrecio(),
+            "categories" => $this->categories(),
         ]);
     }
 
     public function edit(Cita $cita): View
     {
+        $invoice = \App\Models\Invoice::where("invoiceable_type", "cita")
+            ->where("invoiceable_id", $cita->id)
+            ->with("payments")
+            ->first();
+
         return view("admin.citas.edit", [
             "title" => "Editar Cita",
             "cita" => $cita,
+            "invoice" => $invoice,
             "pacientes" => $this->pacientes(),
-            "veterinarians" => $this->veterinarians(),
-            "services" => $this->services(),
+            "pacientesData" => $this->pacientesData(),
+            "services" => $this->serviciosConPrecio(),
+            "categories" => $this->categories(),
         ]);
     }
 
@@ -68,6 +76,31 @@ class CitaController extends Controller
             ->toArray();
     }
 
+    private function pacientesData(): array
+    {
+        return Paciente::with(["species", "breed", "owner"])
+            ->orderBy("name")
+            ->get()
+            ->mapWithKeys(
+                fn($p) => [
+                    $p->id => [
+                        "id" => $p->id,
+                        "name" => $p->name,
+                        "photo" => $p->photo,
+                        "species" => $p->species?->name,
+                        "breed" => $p->breed?->name,
+                        "gender" => $p->gender,
+                        "weight" => $p->weight,
+                        "owner" =>
+                            $p->owner?->first_name .
+                            " " .
+                            $p->owner?->last_name,
+                    ],
+                ],
+            )
+            ->toArray();
+    }
+
     private function veterinarians(): array
     {
         return User::role("Veterinario")
@@ -83,9 +116,21 @@ class CitaController extends Controller
             ->toArray();
     }
 
-    private function services(): array
+    private function serviciosConPrecio(): \Illuminate\Database\Eloquent\Collection
     {
-        return Service::orderBy("name")->pluck("name", "id")->toArray();
+        return Service::orderBy("name")
+            ->get(["id", "name", "base_price", "duration_minutes", "category"]);
+    }
+
+    private function categories(): array
+    {
+        return [
+            "consulta" => "Consulta",
+            "vacunacion" => "Vacunación",
+            "cirugia" => "Cirugía",
+            "estetica" => "Estética",
+            "otro" => "Otro",
+        ];
     }
 
     private function statuses(): array

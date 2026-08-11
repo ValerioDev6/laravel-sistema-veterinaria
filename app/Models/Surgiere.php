@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 
 /**
  * Class Surgiere
- * 
+ *
  * @property int $id
  * @property int $pet_id
  * @property int $veterinarian_id
@@ -24,7 +24,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $medical_notes
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * 
+ *
  * @property Paciente $paciente
  * @property User $user
  * @property Cita|null $cita
@@ -67,6 +67,12 @@ class Surgiere extends Model
 	public function cita()
 	{
 		return $this->belongsTo(Cita::class);
+	}
+
+	public function invoice()
+	{
+		return $this->hasOne(Invoice::class, 'invoiceable_id')
+			->where('invoiceable_type', 'surgiere');
 	}
 
 	public function medical_records()

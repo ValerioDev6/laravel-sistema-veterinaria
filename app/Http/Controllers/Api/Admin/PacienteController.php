@@ -79,14 +79,14 @@ class PacienteController extends Controller
     public function records(Paciente $paciente): JsonResponse
     {
         $records = $paciente->medical_records()
-            ->with("veterinarian")
+            ->with("user")
             ->orderByDesc("event_date")
             ->get()
             ->map(fn ($record) => [
                 "id" => $record->id,
                 "event_type" => $record->event_type,
                 "event_date" => $record->event_date?->format("d/m/Y"),
-                "veterinarian" => $record->veterinarian?->username,
+                "veterinarian" => $record->user?->username,
                 "notes" => $record->notes,
             ]);
 
@@ -101,7 +101,7 @@ class PacienteController extends Controller
     public function vacunas(Paciente $paciente): JsonResponse
     {
         $vacunas = $paciente->vacunas()
-            ->with(["vaccine_type", "veterinarian"])
+            ->with(["vaccine_type", "user"])
             ->orderByDesc("vaccination_date")
             ->get()
             ->map(fn ($vacuna) => [
@@ -109,7 +109,7 @@ class PacienteController extends Controller
                 "vaccine_type" => $vacuna->vaccine_type?->name,
                 "vaccination_date" => $vacuna->vaccination_date?->format("d/m/Y"),
                 "next_due_date" => $vacuna->next_due_date?->format("d/m/Y"),
-                "veterinarian" => $vacuna->veterinarian?->username,
+                "veterinarian" => $vacuna->user?->username,
             ]);
 
         return response()->json([
@@ -123,7 +123,7 @@ class PacienteController extends Controller
     public function cirugias(Paciente $paciente): JsonResponse
     {
         $cirugias = $paciente->surgieres()
-            ->with("veterinarian")
+            ->with("user")
             ->orderByDesc("surgery_date")
             ->get()
             ->map(fn ($cirugia) => [
@@ -131,7 +131,7 @@ class PacienteController extends Controller
                 "surgery_type" => $cirugia->surgery_type,
                 "surgery_date" => $cirugia->surgery_date?->format("d/m/Y H:i"),
                 "status" => $cirugia->status,
-                "veterinarian" => $cirugia->veterinarian?->username,
+                "veterinarian" => $cirugia->user?->username,
                 "outcome" => $cirugia->outcome,
             ]);
 

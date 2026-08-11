@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 
 /**
  * Class JobBatch
- * 
+ *
  * @property string $id
  * @property string $name
  * @property int $total_jobs

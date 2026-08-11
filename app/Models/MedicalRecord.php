@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 
 /**
  * Class MedicalRecord
- * 
+ *
  * @property int $id
  * @property int $pet_id
  * @property int $veterinarian_id
@@ -24,7 +24,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $notes
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * 
+ *
  * @property Paciente $paciente
  * @property User $user
  * @property Cita|null $cita

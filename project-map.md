@@ -227,16 +227,17 @@
 ### Módulo: Cirugías (Surgiere)
 | Elemento | Archivo | Estado |
 |----------|---------|--------|
-| Form Request Store/Update | `app/Http/Requests/Cirugias/StoreCirugiaRequest.php`, `UpdateCirugiaRequest.php` (status enum) | ✅ |
-| Action [TX] | `app/Actions/Cirugias/CreateCirugiaAction.php` (surgiere + `medical_record` event_type='cirugia') | ✅ |
-| Actions | `app/Actions/Cirugias/UpdateCirugiaAction.php`, `CambiarEstadoCirugiaAction.php`, `DeleteCirugiaAction.php` (valida `medical_records`) | ✅ |
-| Controller Api | `app/Http/Controllers/Api/Admin/CirugiaController.php` (CRUD + cambiarEstado) | ✅ |
-| Resource | `app/Http/Resources/CirugiaResource.php` (usa relación `user()`) | ✅ |
-| Controller Admin | `app/Http/Controllers/Admin/CirugiaController.php` | ✅ |
-| Vistas | `admin/cirugias/{index,create,edit}.blade.php` | ✅ |
-| JS | `public/js/pages/cirugias.js` | ✅ |
+| Form Request Store/Update | `app/Http/Requests/Cirugias/StoreCirugiaRequest.php`, `UpdateCirugiaRequest.php` (status enum; total + payment_method + advance_amount) | ✅ |
+| Action [TX] | `app/Actions/Cirugias/CreateCirugiaAction.php` (surgiere + `medical_record` event_type='cirugia' + invoice/pago; arma fecha desde `surgery_date`+`surgery_time`) | ✅ |
+| Actions | `app/Actions/Cirugias/UpdateCirugiaAction.php` (upsert invoice/pago), `ObtenerDisponibilidadCirugiaAction.php` (vets + horario + slots, agenda unificada citas/vacunas/cirugías), `ValidarDisponibilidadCirugia.php`, `CambiarEstadoCirugiaAction.php`, `CambiarEstadoPagoCirugiaAction.php`, `DeleteCirugiaAction.php` (valida `medical_records`) | ✅ |
+| Filters | `app/Filters/Cirugias/` (busqueda, especie, veterinario, estado de pago, fecha) | ✅ |
+| Controller Api | `app/Http/Controllers/Api/Admin/CirugiaController.php` (CRUD + cambiarEstado + cambiarEstadoPago + disponibilidad) | ✅ |
+| Resource | `app/Http/Resources/CirugiaResource.php` (species, surgery_time, payment_status/total/paid) | ✅ |
+| Controller Admin | `app/Http/Controllers/Admin/CirugiaController.php` (index con filtros; create/edit con disponibilidad + pago) | ✅ |
+| Vistas | `admin/cirugias/{index,create,edit}.blade.php` (filtros, bloque disponibilidad con vet-cards + horas, preview mascota, bloque Pago) | ✅ |
+| JS | `public/js/pages/cirugias.js` (DataTable serverSide + filtros + `initCirugiaForm` disponibilidad/pago) | ✅ |
 | Seeder | `database/seeders/CirugiaSeeder.php` (3 cirugías, sembrado) | ✅ |
-| Rutas | Web `admin.cirugias.*` + API `admin.api.cirugias.*` (+ PATCH `/estado`) | ✅ |
+| Rutas | Web `admin.cirugias.*` + API `admin.api.cirugias.*` (+ `disponibilidad`, PATCH `/estado`, PATCH `/estado-pago`) | ✅ |
 
 ### Módulo: Medical Records
 | Elemento | Archivo | Estado |

@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Actions\Cirugias\CambiarEstadoCirugiaAction;
+use App\Actions\Cirugias\CambiarEstadoPagoCirugiaAction;
 use App\Actions\Cirugias\CreateCirugiaAction;
 use App\Actions\Cirugias\DeleteCirugiaAction;
 use App\Actions\Cirugias\ListCirugiasAction;
+use App\Actions\Cirugias\ObtenerDisponibilidadCirugiaAction;
 use App\Actions\Cirugias\UpdateCirugiaAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Cirugias\StoreCirugiaRequest;
@@ -36,6 +38,18 @@ class CirugiaController extends Controller
         ]);
     }
 
+    public function disponibilidad(
+        Request $request,
+        ObtenerDisponibilidadCirugiaAction $action,
+    ): JsonResponse {
+        $request->validate(["fecha" => ["required", "date"]]);
+
+        return response()->json([
+            "success" => true,
+            "data" => $action->execute($request->input("fecha")),
+        ]);
+    }
+
     public function store(
         StoreCirugiaRequest $request,
     ): JsonResponse {
@@ -46,7 +60,7 @@ class CirugiaController extends Controller
                 "status" => true,
                 "message" => "Cirugía registrada correctamente",
                 "data" => new CirugiaResource(
-                    $cirugia->load(["paciente", "user"]),
+                    $cirugia->load(["paciente", "user", "invoice", "invoice.payments"]),
                 ),
                 "errors" => (object) [],
             ],
@@ -63,7 +77,7 @@ class CirugiaController extends Controller
         return response()->json([
             "status" => true,
             "message" => "Cirugía actualizada correctamente",
-            "data" => new CirugiaResource($cirugia->load(["paciente", "user"])),
+            "data" => new CirugiaResource($cirugia->load(["paciente", "user", "invoice", "invoice.payments"])),
             "errors" => (object) [],
         ]);
     }
@@ -85,7 +99,31 @@ class CirugiaController extends Controller
         return response()->json([
             "status" => true,
             "message" => "Estado de la cirugía actualizado",
-            "data" => new CirugiaResource($cirugia->load(["paciente", "user"])),
+            "data" => new CirugiaResource($cirugia->load(["paciente", "user", "invoice", "invoice.payments"])),
+            "errors" => (object) [],
+        ]);
+    }
+
+    public function cambiarEstadoPago(
+        Surgiere $cirugia,
+        CambiarEstadoPagoCirugiaAction $action,
+    ): JsonResponse {
+        $request = request()->validate([
+            "status" => [
+                "required",
+                "string",
+                "in:pendiente,parcial,pagado,anulado",
+            ],
+        ]);
+
+        $cirugia = $action->execute($cirugia, $request["status"]);
+
+        return response()->json([
+            "status" => true,
+            "message" => "Estado de pago de la cirugía actualizado",
+            "data" => new CirugiaResource(
+                $cirugia->load(["paciente", "user", "invoice", "invoice.payments"]),
+            ),
             "errors" => (object) [],
         ]);
     }
@@ -95,7 +133,6 @@ class CirugiaController extends Controller
         DeleteCirugiaAction $action,
     ): JsonResponse {
         $action->execute($cirugia);
-
         return response()->json([
             "status" => true,
             "message" => "Cirugía eliminada correctamente",

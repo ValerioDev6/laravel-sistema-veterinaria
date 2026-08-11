@@ -133,6 +133,96 @@ El usuario pidió que Vacunas permita registrar un **nuevo tipo de vacuna** desd
 
 **Verificado por HTTP** (`php artisan serve --port=8123`, login dr.torres): vista `/admin/calendario` 200; `GET /api/admin/calendario` → 19 eventos (9 citas `#405189`, 7 vacunas `#10b981`, 3 cirugías `#f59e0b`) con `status` correcto y `className`; `PATCH /admin/vacunas/1/estado-pago` pendiente→pagado→pendiente OK (invoice vuelve a pendiente con saldo 35 y pago anulado); `PATCH /admin/citas/2/estado` y `/admin/cirugias/3/estado` OK; todo restaurado a su estado original. `php -l`, `node --check`, `view:cache` OK.
 
+## Fix #9 — Módulo Cirugías replicando Vacunas/Citas (filtros del index + pago/factura en el create)
+
+**Tipo:** Mejora de módulo (backend + frontend)
+
+**Fecha:** 2026-08-11
+
+**Contexto:** El usuario pidió adaptar el módulo de **Cirugías** (`admin/cirugias/`) para que sea similar a Vacunas y Citas:
+1. **Index con filtros**: nombre de mascota (búsqueda), especie, veterinario, estado de pago y rango de fecha (desde–hasta).
+2. **Create** con selección de mascota (con preview), form de cirugía y bloque **Pago/Factura obligatorio** (método + adelanto), con el **total ingresado manualmente** porque la cirugía no tiene catálogo/precio base.
+
+### Decisión de diseño
+
+A diferencia de Vacunas (el total sale de `vaccine_types.base_price`), la cirugía **no tiene precio base**: el usuario ingresa el **total manualmente** en el form. Se replica el patrón de facturación polimórfica del proyecto (`invoiceable_type = 'surgiere'`, ya usado en 13 invoices previas).
+
+### Backend
+
+- **Filters nuevos** en `app/Filters/Cirugias/`: `FiltrarPorBusquedaCirugia` (mascota, veterinario, `surgery_type`), `FiltrarPorEspecieCirugia` (por `paciente.species_id`), `FiltrarPorVeterinarioCirugia`, `FiltrarPorEstadoPagoCirugia` (por invoice `surgiere`), `FiltrarPorFechaCirugia` (`surgery_date_from/to`).
+- **`ListCirugiasAction`**: pipeline de los 5 filters + `OrdenarPor` + eager load `paciente, user, invoice, invoice.payments`.
+- **Modelo `Surgiere`**: relación `invoice()` (`hasOne` con `invoiceable_type='surgiere'`).
+- **`CirugiaResource`**: expone `species_id`, `species`, `surgery_time`, `payment_status`, `payment_total`, `payment_paid`.
+- **`Store/UpdateCirugiaRequest`**: `total` (required, min 0), `payment_method` (required, enum), `advance_amount` (required, min 0.01).
+- **`Create/UpdateCirugiaAction`**: TX que crea/actualiza cirugía + `medical_record` (event_type `cirugia`; create) + `registrarPago()` privado que hace upsert de Invoice (`surgiere`, status `pagado`/`parcial`/`pendiente` según adelanto) + Payment.
+- **`CambiarEstadoPagoCirugiaAction`** (nuevo) + endpoint `PATCH api/admin/cirugias/{cirugia}/estado-pago`: replica vacunas — `pagado` usa `RegistrarPagoAction` (paga saldo restante), `pendiente` usa `AnularPagoAction`, `anulado` actualiza invoice.
+
+### Web / Frontend
+
+- **`Admin/CirugiaController`**: `index` pasa `veterinarians`, `species`, `paymentStatuses`; `create`/`edit` pasan `pacientesData` (preview) e `invoice` con `payments` (edición).
+- **Vistas** `admin/cirugias/{index,create,edit}.blade.php`: index con form de filtros + columna **Pago**; create/edit con preview de mascota + bloque de pago (total manual, método, adelanto).
+- **`public/js/pages/cirugias.js`**: `recolectarFiltros()`/`getFilters()` server-side (debounce 350 ms, Filtrar/Limpiar), `initPreviewMascota()`, envío de `total`/`payment_method`/`advance_amount`, columna Pago con badge + dropdown de cambio de estado de pago.
+
+### Verificación (HTTP real, `php artisan serve` 127.0.0.1:8000)
+
+- `php -l` OK (17 archivos), `view:cache` + `view:clear` OK, `node --check` cirugias.js OK. Sin SEMAPHORE/commits.
+- `GET /api/admin/cirugias?per_page=5` → contrato `{success, data, pagination}` con `payment_status` (parcial etc.).
+- Filtros: `payment_status=parcial`→2, `species_id=1`→2 (Perro), `search=Rocky`→1. Vista index/create/edit → 200 (form de filtros y bloque de pago presentes).
+- `PATCH estado-pago` cirugía 2 parcial→**pagado** (payment_total 150, payment_paid 150) y revertida manualmente a **parcial** (saldo 75, 1 pago tarjeta).
+- `POST` create con total 200/adelanto 80 → 201 con invoice `parcial` (total 200, paid 80); `PUT` update → `pagado` 250/250. `DELETE` → 422 (regla de historial médico, correcta).
+- Limpieza tras pruebas: datos de prueba eliminados manualmente (invoice + payment + medical_record + cirugía 4). **BD restaurada: 13 invoices, 7 payments, 3 cirugías.**
+
+## Fix #10 — Correcciones post-revisión: DataTable de cirugías ("unknown parameter estado") + tabs del show de paciente ("undefined relationship veterinarian")
+
+**Tipo:** Bugfix (frontend + API) · **Fecha:** 2026-08-11
+
+### 1. DataTable de cirugías — "Requested unknown parameter 'estado' for row 0, column 6"
+
+**Síntoma:** warning de DataTables en `admin/cirugias`: la columna 6 (Estado) no encontraba el parámetro `estado`.
+
+**Causa raíz:** en `public/js/pages/cirugias.js` la columna del index se declaró como `{ data: "estado", orderable: false }`, pero `datosCargados()` retornaba la clave `status` (no `estado`) y el estado no tenía badge de color.
+
+**Fix:** en `datosCargados()`, en `public/js/pages/cirugias.js`, se añadió la clave `estado: renderEstado(c.status)` (genera el badge con color y etiqueta traducida), igual que la columna Pago.
+
+### 2. Tabs del show de paciente — "Call to undefined relationship [veterinarian] on model [App\Models\MedicalRecord/Vacuna]"
+
+**Síntoma:** en `admin/pacientes/12` los 3 tabs (Historial médico, Vacunas, Cirugías) mostraban "Ocurrió un error: Call to undefined relationship [veterinarian]".
+
+**Causa raíz:** en `app/Http/Controllers/Api/Admin/PacienteController.php`, `records()`, `vacunas()` y `cirugias()` usaban `with("veterinarian")` + `$modelo->veterinarian?->username`, pero `MedicalRecord`, `Vacuna` y `Surgiere` definen la relación como `user()` (no `veterinarian()`), lanzando `RelationNotFoundException`.
+
+**Fix:** en `PacienteController.php` los tres métodos pasaron a `with("user")` y `$modelo->user?->username`. La API **mantiene la clave `veterinarian`** en la respuesta (no se toca `paciente-ficha.js`); solo cambia la relación interna del modelo.
+
+### Verificación (HTTP real, `php artisan serve` 127.0.0.1:8000, sesión carlos.torres)
+
+- `node --check public/js/pages/cirugias.js` OK; `php -l PacienteController.php` OK.
+- `GET /api/admin/pacientes/12/records` → 200 con `veterinarian` (dr.paredes); `/vacunas` → 200 con `vaccine_type`; `/cirugias` → 200.
+- DataTable de cirugías sin el warning de `estado` (recarga de `admin/cirugias`).
+
+**Nota OPcache:** el server con `revalidate_freq=180` puede conservar la versión anterior del controlador por ~3 min tras editar; si el error persiste en el navegador, recargar pasado ese rato o reiniciar el servidor.
+
+## Fix #11 — Bloque de disponibilidad en el create/edit de Cirugías (select de fecha → veterinarios con horario → horas libres)
+
+**Tipo:** Mejora de UI/UX · **Fecha:** 2026-08-11
+
+**Contexto:** El usuario reportó que el create de Cirugías no se parecía al de Citas/Vacunas: faltaba el selector de disponibilidad del médico. "Corrige eso". Se replicó el patrón de Vacunas completo.
+
+**Backend:**
+- **`app/Actions/Cirugias/ObtenerDisponibilidadCirugiaAction.php`** (nuevo): igual que `ObtenerDisponibilidadAction` pero la agenda ocupada une **citas + vacunas + cirugías activas**.
+- **`Api/Admin/CirugiaController@disponibilidad`** + ruta `GET api/admin/cirugias/disponibilidad` antes del apiResource.
+- **`app/Actions/Cirugias/ValidarDisponibilidadCirugia.php`** (nuevo): horario activo + no cita/vacuna/cirugía a esa hora (ignora la cirugía actual en update). En edición, si no cambió fecha/hora/vet, permite guardar (para fechas pasadas del seed).
+- **Requests**: `surgery_time` requerido (`H:i`) y `after()` valida disponibilidad. Update lee el id de ruta robustamente (`is_object`).
+- **Actions Create/Update**: `armarFechaHora()` combina `surgery_date` (Y-m-d) + `surgery_time` (H:i) → datetime; `issued_at` de la invoice con esa fecha.
+
+**Frontend:**
+- **Vistas create/edit**: fecha (disparador) → tarjetas `vet-card` (horario + badge Disponible/Ocupado/Sin horario + botón Aplicar) → horas libres → hidden `veterinarian_id` + `surgery_time`; preview de mascota; sección Pago; "Guardar y cobrar". Edit pasa `window.cirugiaEditarInit = {veterinario, hora}`.
+- **`public/js/pages/cirugias.js`**: `initCirugiaForm()` replicando `initVacunaForm` (cargarDisponibilidad, renderVetCard, bindVetCards, aplicarVet, renderHoras, preseleccionarEnEdicion, adelanto ≤ total, submit con fecha+hora+vet).
+
+**Verificado por HTTP** (`php artisan serve` 127.0.0.1:8000, carlos.torres):
+- `GET /api/admin/cirugias/disponibilidad?fecha=2026-08-18` → 3 vets con horario+estado+slots.
+- POST válido → 201 `2026-08-18 10:00` pago parcial; hora fuera de horario → 422; hora ocupada por cirugía → 422.
+- PUT manteniendo fecha/hora → 200 (self-check); cirugía seed del sábado sin horario → 200; hora conflictiva → 422.
+- Vistas create/edit → 200 con bloque disponible. BD restaurada (13 invoices, 7 payments, 3 cirugías; cirugía 3 `2026-08-01 11:00`). `php -l`, `node --check`, `view:cache` OK.
+
 ## Verificación
 
 - `php -l` OK en todos los archivos PHP tocados; `node --check` OK en `vacunas.js` y `vaccine-types.js`; `view:cache` OK; `route:list` confirma las rutas nuevas.

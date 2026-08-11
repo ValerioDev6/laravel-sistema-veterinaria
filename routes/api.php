@@ -88,6 +88,10 @@ Route::prefix("admin")
         ])->name("vacunas.estado-pago");
         Route::apiResource("vacunas", VacunaController::class);
 
+        Route::get("cirugias/disponibilidad", [
+            CirugiaController::class,
+            "disponibilidad",
+        ])->name("cirugias.disponibilidad");
         Route::apiResource("cirugias", CirugiaController::class)->only([
             "index",
             "store",
@@ -98,6 +102,10 @@ Route::prefix("admin")
             CirugiaController::class,
             "cambiarEstado",
         ])->name("cirugias.estado");
+        Route::patch("cirugias/{cirugia}/estado-pago", [
+            CirugiaController::class,
+            "cambiarEstadoPago",
+        ])->name("cirugias.estado-pago");
 
         Route::apiResource("medical-records", MedicalRecordController::class);
         Route::post("medical-records/{medicalRecord}/adjuntos", [

@@ -17,56 +17,88 @@
     </div>
 
     <div class="row">
-        <div class="col-lg-8">
+        <div class="col-12">
             <div class="card">
-                <div class="card-header">
-                    <h4 class="card-title mb-0">Editar Servicio</h4>
+                <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+                    <h4 class="card-title mb-0">
+                        <i class="ri-stethoscope-line me-1 text-primary"></i>Editar Servicio
+                    </h4>
+                    <span class="badge bg-info-subtle text-info">ID #{{ $service->id }}</span>
                 </div>
                 <div class="card-body">
-                    <form id="formEditarService" data-id="{{ $service->id }}">
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label" for="name">Nombre</label>
-                                <input type="text" class="form-control" id="name" name="name" value="{{ $service->name }}">
-                                <div class="invalid-feedback"></div>
-                            </div>
+                    <div class="row justify-content-center">
+                        <div class="col-12 col-md-10 col-xl-8">
+                            <form id="formEditarService" data-id="{{ $service->id }}">
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label" for="id">ID</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="ri-hashtag"></i></span>
+                                            <input type="text" class="form-control" id="id" value="#{{ $service->id }}" disabled>
+                                        </div>
+                                    </div>
 
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label" for="category">Categoría</label>
-                                <select class="form-select" id="category" name="category">
-                                    @foreach ($categories as $value => $label)
-                                        <option value="{{ $value }}" @selected($service->category == $value)>{{ $label }}</option>
-                                    @endforeach
-                                </select>
-                                <div class="invalid-feedback"></div>
-                            </div>
+                                    <div class="col-md-8">
+                                        <label class="form-label" for="name">Nombre <span class="text-danger">*</span></label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="ri-stethoscope-line"></i></span>
+                                            <input type="text" class="form-control" id="name" name="name" value="{{ $service->name }}" required>
+                                        </div>
+                                        <div class="invalid-feedback"></div>
+                                    </div>
 
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label" for="base_price">Precio base (S/)</label>
-                                <input type="number" step="0.01" min="0" class="form-control" id="base_price" name="base_price" value="{{ $service->base_price }}">
-                                <div class="invalid-feedback"></div>
-                            </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label" for="category">Categoría <span class="text-danger">*</span></label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="ri-price-tag-3-line"></i></span>
+                                            <select class="form-select" id="category" name="category" required>
+                                                @foreach ($categories as $value => $label)
+                                                    <option value="{{ $value }}" @selected($service->category == $value)>{{ $label }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <div class="invalid-feedback"></div>
+                                    </div>
 
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label" for="duration_minutes">Duración (minutos)</label>
-                                <input type="number" min="1" class="form-control" id="duration_minutes" name="duration_minutes" value="{{ $service->duration_minutes }}">
-                                <div class="invalid-feedback"></div>
-                            </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label" for="base_price">Precio base (S/) <span class="text-danger">*</span></label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="ri-money-dollar-circle-line"></i></span>
+                                            <input type="number" step="0.01" min="0" class="form-control" id="base_price" name="base_price" value="{{ $service->base_price }}" required>
+                                        </div>
+                                        <div class="invalid-feedback"></div>
+                                    </div>
 
-                            <div class="col-12 mb-3">
-                                <label class="form-label" for="description">Descripción</label>
-                                <textarea class="form-control" id="description" name="description" rows="3">{{ $service->description }}</textarea>
-                                <div class="invalid-feedback"></div>
-                            </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label" for="duration_minutes">Duración (minutos) <span class="text-danger">*</span></label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="ri-time-line"></i></span>
+                                            <input type="number" min="1" class="form-control" id="duration_minutes" name="duration_minutes" value="{{ $service->duration_minutes }}" required>
+                                        </div>
+                                        <div class="invalid-feedback"></div>
+                                    </div>
+
+                                    <div class="col-12">
+                                        <label class="form-label" for="description">Descripción <span class="text-muted">(opcional)</span></label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="ri-file-text-line"></i></span>
+                                            <textarea class="form-control" id="description" name="description" rows="3">{{ $service->description }}</textarea>
+                                        </div>
+                                        <div class="invalid-feedback"></div>
+                                    </div>
+                                </div>
+
+                                <div class="d-flex justify-content-end gap-2 pt-3 mt-2 border-top">
+                                    <a href="{{ route('admin.services.index') }}" class="btn btn-light waves-effect waves-light">
+                                        <i class="ri-close-line me-1"></i>Cancelar
+                                    </a>
+                                    <button type="submit" class="btn btn-primary waves-effect waves-light" id="btnActualizarService">
+                                        <i class="ri-save-3-line me-1"></i>Actualizar
+                                    </button>
+                                </div>
+                            </form>
                         </div>
-
-                        <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-primary" id="btnActualizarService">
-                                <i class="ri-save-line me-1"></i>Actualizar
-                            </button>
-                            <a href="{{ route('admin.services.index') }}" class="btn btn-light">Cancelar</a>
-                        </div>
-                    </form>
+                    </div>
                 </div>
             </div>
         </div>

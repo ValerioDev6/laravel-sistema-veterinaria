@@ -26,6 +26,24 @@
                     </a>
                 </div>
                 <div class="card-body">
+                    <form id="formFiltrosServices" class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label" for="busquedaServices">Buscar</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="ri-search-line"></i></span>
+                                <input type="search" class="form-control" id="busquedaServices" name="search" placeholder="Nombre o categoría…">
+                            </div>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary me-2">
+                                <i class="ri-filter-line me-1"></i>Filtrar
+                            </button>
+                            <button type="button" class="btn btn-light" id="btnLimpiarFiltrosServices">
+                                <i class="ri-eraser-line me-1"></i>Limpiar
+                            </button>
+                        </div>
+                    </form>
+
                     <table id="table-services" class="table table-borderless dt-responsive nowrap w-100">
                         <thead>
                             <tr style="border-bottom: 2px solid #212529;">

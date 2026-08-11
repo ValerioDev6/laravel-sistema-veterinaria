@@ -56,6 +56,8 @@
     const tableEl = document.getElementById("table-services");
     if (tableEl) {
         let dataTable = null;
+        let terminoBusqueda = "";
+        let terminoBusquedaTimer = null;
 
         const categoryLabels = {
             consulta: "Consulta",
@@ -73,13 +75,16 @@
                     serverSide: true,
                     processing: true,
                     pageLength: 15,
+                    searching: false,
+                    lengthChange: false,
+                    info: false,
                     ajax: function (data, callback) {
                         const params = {
                             per_page: data.length,
                             page: Math.floor(data.start / data.length) + 1,
                         };
-                        if (data.search && data.search.value) {
-                            params.search = data.search.value;
+                        if (terminoBusqueda) {
+                            params.search = terminoBusqueda;
                         }
                         if (data.order && data.order.length) {
                             params.sort_by = data.order[0].column;
@@ -162,6 +167,40 @@
                     })
                     .catch(() => {});
             });
+        }
+
+        function limpiarBuscador() {
+            const input = document.getElementById("busquedaServices");
+            if (input) input.value = "";
+            terminoBusqueda = "";
+        }
+
+        $("#busquedaServices").on("input", function () {
+            const termino = this.value;
+            clearTimeout(terminoBusquedaTimer);
+            terminoBusquedaTimer = setTimeout(function () {
+                terminoBusqueda = termino.trim();
+                dataTable.ajax.reload();
+            }, 350);
+        });
+
+        $("#busquedaServices").on("keydown", function (e) {
+            if (e.key === "Enter") e.preventDefault();
+        });
+
+        const formFiltros = document.getElementById("formFiltrosServices");
+        if (formFiltros) {
+            formFiltros.addEventListener("submit", (e) => {
+                e.preventDefault();
+                dataTable.ajax.reload();
+            });
+            document
+                .getElementById("btnLimpiarFiltrosServices")
+                ?.addEventListener("click", () => {
+                    formFiltros.reset();
+                    limpiarBuscador();
+                    dataTable.ajax.reload();
+                });
         }
 
         cargarDatos();

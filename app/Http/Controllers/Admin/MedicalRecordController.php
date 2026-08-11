@@ -26,11 +26,12 @@ class MedicalRecordController extends Controller
         $pacientes = Paciente::orderBy("name")->get();
         $veterinarios = User::role("Veterinario")->orderBy("username")->get();
         $medicines = Medicine::orderBy("name")->get();
-        $citas = Cita::orderByDesc("fecha")->limit(50)->get();
+        $citas = Cita::with("paciente")->orderByDesc("appointment_date")->limit(50)->get();
 
         return view("admin.medical-records.create", [
             "title" => "Nueva Entrada de Historial",
             "pacientes" => $pacientes,
+            "pacientesData" => $this->pacientesData(),
             "veterinarios" => $veterinarios,
             "medicines" => $medicines,
             "citas" => $citas,
@@ -52,5 +53,30 @@ class MedicalRecordController extends Controller
             "title" => "Detalle del Historial",
             "record" => $record,
         ]);
+    }
+
+    private function pacientesData(): array
+    {
+        return Paciente::with(["species", "breed", "owner"])
+            ->orderBy("name")
+            ->get()
+            ->mapWithKeys(
+                fn($p) => [
+                    $p->id => [
+                        "id" => $p->id,
+                        "name" => $p->name,
+                        "photo" => $p->photo,
+                        "species" => $p->species?->name,
+                        "breed" => $p->breed?->name,
+                        "gender" => $p->gender,
+                        "weight" => $p->weight,
+                        "owner" =>
+                            $p->owner?->first_name .
+                            " " .
+                            $p->owner?->last_name,
+                    ],
+                ],
+            )
+            ->toArray();
     }
 }

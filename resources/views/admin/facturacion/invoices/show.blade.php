@@ -58,9 +58,9 @@
                         <p class="text-muted mb-0">No se registraron pagos.</p>
                     @else
                         <div class="table-responsive">
-                            <table class="table table-sm mb-0">
+                            <table class="table table-borderless dt-responsive nowrap w-100">
                                 <thead>
-                                    <tr>
+                                    <tr style="border-bottom: 2px solid #212529;">
                                         <th>ID</th>
                                         <th>Monto</th>
                                         <th>Anticipo</th>

@@ -45,4 +45,16 @@ El listado de `admin/medical-records` usaba una DataTable server-side genérica 
 
 **Verificado:** API citas con `pet_id=12` → cita #41; simulación node → Todos=3 (cirugía/vacuna/cita), Citas=cita, Vacunas=vacuna, Cirugías=cirugía.
 
+## Fix posterior: error 500 en el create de Historial (columna `fecha` inexistente)
+
+**Problema reportado:** el usuario creó una entrada manual (Entrada #11, Chent) que salió **sin signos vitales ni prescripciones**, mientras la del seeder (Entrada #6, Copito) sí los tenía. Preguntaba dónde/cómo se registran vitales y recetas.
+
+**Causa raíz:** el `create` del módulo estaba **roto con error 500** — `MedicalRecordController@create` ordenaba las citas por `Cita::orderByDesc("fecha")` y `appointment_date` (columna real de la tabla `citas` no existe; es `appointment_date`/`appointment_time`), lanzando `SQLSTATE[42S22] Unknown column 'fecha'`. El formulario de signos vitales y prescripciones **sí existe** en `create.blade.php` (secciones "Signos vitales (opcional)" y "Prescripciones (opcional)") y el JS ya los enviaba (`vital_signs[]`, `serializarRecetas()`) — pero con el create caído no se podía llegar a usarlos.
+
+**Solución:**
+- `app/Http/Controllers/Admin/MedicalRecordController.php`: `orderByDesc("fecha")` → `orderByDesc("appointment_date")` + `with("paciente")`.
+- `create.blade.php`: la opción de cita usaba `$cita->fecha`/`$cita->hora` → ahora `$cita->appointment_date?->format('Y-m-d')` / `$cita->appointment_time?->format('H:i')`.
+
+**Verificado:** create 200 con las secciones de vitales/recetas; POST real con vitales (15.5 kg, 38.2 °C, 90 lpm) + receta (Prednisolona, 1 cda c/8h, 5 días) → 201 y el show muestra todo; registro de prueba eliminado (BD restaurada a 10 records).
+
 **Estado:** verificado.

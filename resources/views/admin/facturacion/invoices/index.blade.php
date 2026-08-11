@@ -43,6 +43,13 @@
                             </div>
                             <form id="formFiltros" class="row g-2 mb-3">
                                 <div class="col-md-3">
+                                    <label class="form-label visually-hidden" for="busquedaInvoices">Buscar</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="ri-search-line"></i></span>
+                                        <input type="search" class="form-control" id="busquedaInvoices" name="search" placeholder="Estado o total…">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
                                     <select class="form-select" id="filtro_status" name="status">
                                         <option value="">Todos los estados</option>
                                         <option value="pendiente">Pendiente</option>
@@ -94,6 +101,13 @@
                                 <h4 class="card-title mb-0">Pagos</h4>
                             </div>
                             <form id="formFiltrosPagos" class="row g-2 mb-3">
+                                <div class="col-md-4">
+                                    <label class="form-label visually-hidden" for="busquedaPagos">Buscar</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="ri-search-line"></i></span>
+                                        <input type="search" class="form-control" id="busquedaPagos" name="search" placeholder="Estado o método de pago…">
+                                    </div>
+                                </div>
                                 <div class="col-md-4">
                                     <select class="form-select" id="filtro_status_pago" name="status">
                                         <option value="">Todos los estados</option>

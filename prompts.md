@@ -853,3 +853,93 @@ Audita `app/Http/Controllers/Api/Admin/**` completo. Para cada `index()` que ten
 - `node --check medical-records.js` OK; `php -l` de la Action OK; `view:cache` OK.
 - HTTP `GET /api/admin/citas?pet_id=12&per_page=100` → cita #41 (Chent, `2026-08-24 07:00`, confirmada).
 - Lógica simulada en node: mascota con 1 vacuna + 1 cirugía + 1 cita → **Todos** = 3 (cirugía 26/08, vacuna 25/08, cita 24/08), **Citas** = cita, **Vacunas** = vacuna, **Cirugías** = cirugía.
+
+---
+
+## Prompt #22c — 2026-08-11 (Fix: create de Historial con error 500 — no se podían guardar signos vitales/prescripciones)
+
+**Tipo:** Bug fix — el formulario de alta de historial tiraba 500 por columna inexistente.
+
+**Contexto:** El usuario notó que su entrada manual (Entrada #11, Chent) no tenía signos vitales ni prescripciones (el seeder sí las genera, ej. Entrada #6 Copito) y preguntaba cómo/dónde se registran. Al revisar: el `create` del módulo **estaba roto con 500** porque `MedicalRecordController@create` ordenaba citas por `Cita::orderByDesc("fecha")` (columna que **no existe**; la real es `appointment_date`/`appointment_time`), lanzando `SQLSTATE[42S22] Unknown column 'fecha'`.
+
+**Cambios:**
+
+1. **`app/Http/Controllers/Admin/MedicalRecordController.php`**: `orderByDesc("fecha")` → `orderByDesc("appointment_date")` (+ `with("paciente")`).
+2. **`resources/views/admin/medical-records/create.blade.php`**: la opción de cita mostraba `$cita->fecha`/`$cita->hora` → `$cita->appointment_date?->format('Y-m-d')` / `$cita->appointment_time?->format('H:i')`.
+
+**Aclaración funcional (lo que preguntaba el usuario):** el form de crear SÍ tiene las secciones "Signos vitales" (peso/temperatura/frec. cardíaca) y "Prescripciones" (botón "Agregar medicamento" → medicamento/dosis/duración), y el JS las envía al backend que las persiste (`CreateMedicalRecordAction` crea `VitalSign` si viene `vital_signs` no vacío y `Prescription` por cada receta). El seeder llena esos datos directamente contra las tablas `vital_signs` y `prescriptions`; el alta manual los deja vacíos si no se rellenan (son opcionales).
+
+**Verificado:** create 200 con ambas secciones presentes; POST real con vitales (15.5 kg, 38.2 °C, 90 lpm) + receta → 201 y el show los muestra; registro de prueba eliminado (BD restaurada, 10 records). `php -l`, `view:cache` OK. El servidor se reinició (OPcache servía el controlador viejo).
+
+---
+
+## Prompt #23 — 2026-08-11 (create de Historial adaptativo, sin dimensiones fijas)
+
+**Tipo:** Mejora de UI — el formulario de crear entrada de historial queda responsive.
+
+**Contexto:** El usuario pidió que el create "sea adaptativo, quite dimensiones definidas" — el formulario rompía el ancho centrado del `col-12`.
+
+**Cambios:**
+
+1. **`resources/views/admin/medical-records/create.blade.php`**: el contenedor pasó de `col-lg-8` (ancho fijo) a `col-12` con `row justify-content-center`, ocupando todo el ancho y apilándose en mobile. Los campos internos ya son adaptativos (`col-md-6` / `col-md-4` en signos vitales).
+
+**Verificado:** create 200, `php -l` y `view:cache` OK.
+
+---
+
+## Prompt #24 — 2026-08-11 (Rediseño del create de Historial: preview de mascota + UI profesional)
+
+**Tipo:** Mejora de UI — el create de historial médico pasó de selects planos a un formulario profesional con preview de la mascota.
+
+**Contexto:** El usuario pidió que el create "sea más profesional, mostrando por lo menos la imagen de la mascota" — el diseño anterior era "muy pobre, muchos selects".
+
+**Cambios:**
+
+1. **`app/Http/Controllers/Admin/MedicalRecordController.php`**: se agregó `pacientesData()` (mismo helper que `CitaController`): mascotas con `species`/`breed`/`owner` → `{id, name, photo, species, breed, gender, weight, owner}`; se pasa a la vista como `medicalRecordsPacientesData`.
+2. **`resources/views/admin/medical-records/create.blade.php`**:
+   - Header del card con avatar + ícono.
+   - **Preview de mascota** (`#bloquePreviewMascota`): al seleccionar mascota aparece su foto (o icono paw) + nombre/especie/raza/género/dueño/peso.
+   - Todos los selects e inputs con **input-group + íconos `ri-*`** (paw, user-star, stethoscope, calendar, calendar-check, scales, thermometer, pulse, medicine-bottle).
+   - Secciones de Signos vitales y Prescripciones con íconos en el header; placeholders de referencia (36.5–39.5, 60–140).
+   - Botón "Agregar medicamento" en `btn-primary`.
+3. **`public/js/pages/medical-records.js`**: `renderPreviewMascota()` (mismo patrón que citas.js) conectado al `change` de `pet_id`.
+
+**Verificado:** create 200 con preview + input-groups; `php -l` controller OK, `node --check` JS OK, `view:cache` OK. Vista nueva servida tras el refresh de OPcache.
+
+---
+
+## Prompt #25 — 2026-08-11 (Rediseño de Servicios, Medicamentos y Sucursales)
+
+**Tipo:** Mejora de UI — los 3 módulos dejan el search por defecto de DataTables y pasan a búsqueda propia con debounce + formularios rediseñados (ID autogenerado + required + íconos).
+
+**Contexto:** El usuario pidió "mejorar UI, adaptar tablas, quitar el search" de DataTables (búsqueda propia con debounce), seguir el mismo formato de tabla del resto del sistema, y adaptar los formularios con IDs autogenerados y campos required. Para Sucursales: create en un tab dentro del índice (patrón vaccine-types).
+
+**Cambios:**
+
+1. **`resources/views/admin/services/index.blade.php`** y **`medicines/index.blade.php`**: form `#formFiltrosServices`/`#formFiltrosMedicines` con caja de búsqueda (`input-group` + `ri-search-line`, `type=search`) + botones Filtrar/Limpiar.
+2. **`resources/views/admin/branches/index.blade.php`**: reescrito con tabs `nav-tabs-custom` (Listado + Nueva Sucursal). El botón "Nueva Sucursal" cambia al tab (sin redirigir). El form vive en el tab con ID "Autogenerado" + required.
+3. **`resources/views/admin/services/{create,edit}.blade.php`** y **`medicines/{create,edit}.blade.php`**: adaptativos (`col-12` + `row justify-content-center`), card header con ícono, input-groups con íconos `ri-*`, campo ID "Autogenerado"/`#id` disabled, `required` en campos obligatorios.
+4. **`resources/views/admin/branches/edit.blade.php`**: rediseñado igual que el create en tab.
+5. **`public/js/pages/{services,medicines,branches}.js`**: `terminoBusqueda` + debounce 350ms en `#busqueda*`; DataTable con `searching:false, lengthChange:false, info:false`; se eliminó el uso de `data.search.value`; handlers de submit/limpiar del form de filtros.
+6. **`public/js/pages/branches.js`**: al guardar → Swal + `volverAlListado()` (reset form + `new bootstrap.Tab` a Listado) + `dataTable.ajax.reload()` (sin `window.location.href`).
+
+**Verificado:** `node --check` de los 3 JS OK; `view:cache` OK; índices y create/edit 200 (login con `carlos.torres@veterinaria.com`); búsqueda filtra vía API (`search=cirug`→2 services, `search=lima`→3 branches, `search=a`→5 medicines).
+
+---
+
+## Prompt #26 — 2026-08-11 (Formato de tabla unificado en Horarios, Personal e Invoices)
+
+**Tipo:** Mejora de UI — los módulos Veterinarian Schedules, Usuarios (Personal) e Invoices dejan el search por defecto de DataTables y pasan al formato unificado (búsqueda propia con debounce).
+
+**Contexto:** El usuario pidió que las tablas de `/admin/veterinarian-schedules`, `/admin/usuarios` y `/admin/invoices` sigan el mismo formato que el resto del sistema (búsqueda propia + debounce, sin search de DataTables); en Invoices también dentro del tab de Pagos y en el show.
+
+**Cambios:**
+
+1. **`resources/views/admin/veterinarian-schedules/index.blade.php`**: form `#formFiltrosSchedules` con `#busquedaSchedules` (input-group + search) + Filtrar/Limpiar. El search de schedules filtra por `day_of_week` (entero 1–6), por eso el placeholder indica "Día (1=Lunes, 2=Martes…)".
+2. **`resources/views/admin/usuarios/index.blade.php`**: form `#formFiltrosUsuarios` con `#busquedaUsuarios` + Filtrar/Limpiar.
+3. **`resources/views/admin/facturacion/invoices/index.blade.php`**: `#busquedaInvoices` (tab Facturas) y `#busquedaPagos` (tab Pagos), ambas integradas al form de filtros existente.
+4. **`resources/views/admin/facturacion/invoices/show.blade.php`**: la tabla de pagos pasa de `table table-sm` a `table table-borderless dt-responsive nowrap` para usar el mismo formato visual.
+5. **`public/js/pages/{veterinarian-schedules,usuarios,invoices}.js`**: `terminoBusqueda` + debounce 350ms; DataTable con `searching:false, lengthChange:false, info:false`; se eliminó `data.search.value`.
+6. **`public/js/pages/invoices.js`**: se eliminó `construirDataTable()` (función muerta que duplicaba la inicialización); dos términos de búsqueda separados (`terminoBusquedaInvoices`/`terminoBusquedaPagos`); `getFiltros()` ignora el campo `search` para no pisar el término debounceado.
+
+**Verificado:** `node --check` de los 3 JS OK; `view:clear`/`view:cache` OK; índices y show 200 (login `carlos.torres@veterinaria.com`); API filtra: users `search=carlos`→1, schedules `search=1`→6 Lunes, payments `search=tarjeta`→2, invoices `search=pagado`→2.

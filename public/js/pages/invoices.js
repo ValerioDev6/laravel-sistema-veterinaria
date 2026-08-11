@@ -1,5 +1,9 @@
 $(function () {
     const servicios = window.servicios || { cita: {}, vacuna: {}, surgiere: {} };
+    let terminoBusquedaInvoices = "";
+    let terminoBusquedaInvoicesTimer = null;
+    let terminoBusquedaPagos = "";
+    let terminoBusquedaPagosTimer = null;
 
     function badgeEstado(status) {
         const map = { pagado: "success", parcial: "warning", pendiente: "info", anulado: "secondary" };
@@ -10,6 +14,7 @@ $(function () {
     function getFiltros(formulario) {
         const $form = $(formulario);
         return $form.length ? $form.serializeArray().reduce((acc, campo) => {
+            if (campo.name === "search") return acc;
             if (campo.value) acc[campo.name] = campo.value;
             return acc;
         }, {}) : {};
@@ -25,12 +30,17 @@ $(function () {
                 serverSide: true,
                 processing: true,
                 pageLength: 15,
+                searching: false,
+                lengthChange: false,
+                info: false,
                 ajax: function (data, callback) {
                     const params = {
                         per_page: data.length,
                         page: Math.floor(data.start / data.length) + 1,
-                        search: data.search.value,
                     };
+                    if (terminoBusquedaInvoices) {
+                        params.search = terminoBusquedaInvoices;
+                    }
                     if (data.order && data.order.length) {
                         params.sort_by = data.order[0].column;
                         params.sort_dir = data.order[0].dir;
@@ -75,12 +85,17 @@ $(function () {
                 serverSide: true,
                 processing: true,
                 pageLength: 15,
+                searching: false,
+                lengthChange: false,
+                info: false,
                 ajax: function (data, callback) {
                     const params = {
                         per_page: data.length,
                         page: Math.floor(data.start / data.length) + 1,
-                        search: data.search.value,
                     };
+                    if (terminoBusquedaPagos) {
+                        params.search = terminoBusquedaPagos;
+                    }
                     if (data.order && data.order.length) {
                         params.sort_by = data.order[0].column;
                         params.sort_dir = data.order[0].dir;
@@ -115,25 +130,31 @@ $(function () {
         }
     }
 
-    function construirDataTable() {
-        const tabla = $("#table-invoices");
-        if (!tabla.length || $.fn.DataTable.isDataTable(tabla)) return;
+    $("#busquedaInvoices").on("input", function () {
+        const termino = this.value;
+        clearTimeout(terminoBusquedaInvoicesTimer);
+        terminoBusquedaInvoicesTimer = setTimeout(function () {
+            terminoBusquedaInvoices = termino.trim();
+            cargarDatos();
+        }, 350);
+    });
 
-        tabla.DataTable({
-            language: { url: "//cdn.datatables.net/plug-ins/1.13.11/i18n/es-ES.json" },
-            order: [[0, "desc"]],
-            columnDefs: [{ targets: [7], orderable: false }],
-        });
+    $("#busquedaInvoices").on("keydown", function (e) {
+        if (e.key === "Enter") e.preventDefault();
+    });
 
-        const tablaPagos = $("#table-payments");
-        if (tablaPagos.length && !$.fn.DataTable.isDataTable(tablaPagos)) {
-            tablaPagos.DataTable({
-                language: { url: "//cdn.datatables.net/plug-ins/1.13.11/i18n/es-ES.json" },
-                order: [[0, "desc"]],
-                columnDefs: [{ targets: [7], orderable: false }],
-            });
-        }
-    }
+    $("#busquedaPagos").on("input", function () {
+        const termino = this.value;
+        clearTimeout(terminoBusquedaPagosTimer);
+        terminoBusquedaPagosTimer = setTimeout(function () {
+            terminoBusquedaPagos = termino.trim();
+            cargarPagos();
+        }, 350);
+    });
+
+    $("#busquedaPagos").on("keydown", function (e) {
+        if (e.key === "Enter") e.preventDefault();
+    });
 
     $("#formFiltros").on("submit", function (e) {
         e.preventDefault();

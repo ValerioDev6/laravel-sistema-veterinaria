@@ -54,9 +54,11 @@
     // ------------------------------------------------------------------
     // Página: index
     // ------------------------------------------------------------------
+    let dataTable = null;
     const tableEl = document.getElementById("table-branches");
     if (tableEl) {
-        let dataTable = null;
+        let terminoBusqueda = "";
+        let terminoBusquedaTimer = null;
 
         function cargarDatos() {
             const url = "/admin/branches";
@@ -66,13 +68,16 @@
                     serverSide: true,
                     processing: true,
                     pageLength: 15,
+                    searching: false,
+                    lengthChange: false,
+                    info: false,
                     ajax: function (data, callback) {
                         const params = {
                             per_page: data.length,
                             page: Math.floor(data.start / data.length) + 1,
                         };
-                        if (data.search && data.search.value) {
-                            params.search = data.search.value;
+                        if (terminoBusqueda) {
+                            params.search = terminoBusqueda;
                         }
                         if (data.order && data.order.length) {
                             params.sort_by = data.order[0].column;
@@ -156,15 +161,79 @@
             });
         }
 
+        function limpiarBuscador() {
+            const input = document.getElementById("busquedaBranches");
+            if (input) input.value = "";
+            terminoBusqueda = "";
+        }
+
+        $("#busquedaBranches").on("input", function () {
+            const termino = this.value;
+            clearTimeout(terminoBusquedaTimer);
+            terminoBusquedaTimer = setTimeout(function () {
+                terminoBusqueda = termino.trim();
+                dataTable.ajax.reload();
+            }, 350);
+        });
+
+        $("#busquedaBranches").on("keydown", function (e) {
+            if (e.key === "Enter") e.preventDefault();
+        });
+
+        const formFiltros = document.getElementById("formFiltrosBranches");
+        if (formFiltros) {
+            formFiltros.addEventListener("submit", (e) => {
+                e.preventDefault();
+                dataTable.ajax.reload();
+            });
+            document
+                .getElementById("btnLimpiarFiltrosBranches")
+                ?.addEventListener("click", () => {
+                    formFiltros.reset();
+                    limpiarBuscador();
+                    dataTable.ajax.reload();
+                });
+        }
+
         cargarDatos();
     }
 
     // ------------------------------------------------------------------
-    // Página: crear
+    // Página: crear (tab en el índice)
     // ------------------------------------------------------------------
+    const tabNuevaBranch = document.getElementById("tabNuevaBranch-tab");
+
+    function activarTabNuevaBranch() {
+        if (tabNuevaBranch && window.bootstrap) {
+            new bootstrap.Tab(tabNuevaBranch).show();
+        }
+    }
+
+    function activarTabListado() {
+        const tabListado = document.querySelector(
+            '[data-bs-toggle="tab"][href="#tabListadoBranches"]',
+        );
+        if (tabListado && window.bootstrap) {
+            new bootstrap.Tab(tabListado).show();
+        }
+    }
+
     const formCrear = document.getElementById("formCrearBranch");
     if (formCrear) {
         const btn = document.getElementById("btnGuardarBranch");
+
+        function volverAlListado() {
+            formCrear.reset();
+            activarTabListado();
+        }
+
+        document
+            .getElementById("btnNuevaBranch")
+            ?.addEventListener("click", activarTabNuevaBranch);
+
+        document
+            .getElementById("btnVolverBranches")
+            ?.addEventListener("click", volverAlListado);
 
         formCrear.addEventListener("submit", (e) => {
             e.preventDefault();
@@ -174,10 +243,11 @@
             const datos = recolectarDatos(formCrear);
             ajax.post("/admin/branches", datos)
                 .then((res) => {
-                    Swal.fire("Listo", res.message, "success").then(() => {
-                        window.location.href =
-                            formCrear.dataset.redirect || "/admin/branches";
-                    });
+                    Swal.fire("Listo", res.message, "success");
+                    volverAlListado();
+                    if (dataTable) {
+                        dataTable.ajax.reload();
+                    }
                 })
                 .catch((error) => {
                     if (error.status === 422) {

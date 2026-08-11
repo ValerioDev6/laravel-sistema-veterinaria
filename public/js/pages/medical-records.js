@@ -241,6 +241,34 @@ $(function () {
 
     const $formCrear = $("#formCrearRegistro");
     if ($formCrear.length) {
+        function renderPreviewMascota() {
+            const data = (window.medicalRecordsPacientesData || {})[
+                $formCrear.find('[name="pet_id"]').val()
+            ];
+            const $bloque = $("#bloquePreviewMascota");
+            if (!data) {
+                $bloque.addClass("d-none");
+                return;
+            }
+            $("#previewFotoMascota").html(
+                data.photo
+                    ? `<img src="${data.photo}" alt="${data.name}" class="rounded-circle" style="width:44px;height:44px;object-fit:cover;">`
+                    : '<i class="ri-paw-line fs-2 text-muted"></i>',
+            );
+            $("#previewDatosMascota").html(
+                `<strong class="text-dark">${data.name}</strong><br>` +
+                    [data.species, data.breed, data.gender]
+                        .filter(Boolean)
+                        .join(" · ") +
+                    `<div class="text-muted"><i class="ri-user-line me-1"></i>${data.owner || "—"}` +
+                    (data.weight ? ` · ${data.weight} kg` : "") +
+                    "</div>",
+            );
+            $bloque.removeClass("d-none");
+        }
+
+        $formCrear.find('[name="pet_id"]').on("change", renderPreviewMascota);
+
         $formCrear.on("submit", function (e) {
             e.preventDefault();
             const datos = $formCrear.serializeArray();

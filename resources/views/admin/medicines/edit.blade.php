@@ -17,38 +17,66 @@
     </div>
 
     <div class="row">
-        <div class="col-lg-6">
+        <div class="col-12">
             <div class="card">
-                <div class="card-header">
-                    <h4 class="card-title mb-0">Editar Medicamento</h4>
+                <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+                    <h4 class="card-title mb-0">
+                        <i class="ri-medicine-bottle-line me-1 text-primary"></i>Editar Medicamento
+                    </h4>
+                    <span class="badge bg-info-subtle text-info">ID #{{ $medicine->id }}</span>
                 </div>
                 <div class="card-body">
-                    <form id="formEditarMedicine" data-id="{{ $medicine->id }}">
-                        <div class="mb-3">
-                            <label class="form-label" for="name">Nombre</label>
-                            <input type="text" class="form-control" id="name" name="name" value="{{ $medicine->name }}">
-                            <div class="invalid-feedback"></div>
-                        </div>
+                    <div class="row justify-content-center">
+                        <div class="col-12 col-md-10 col-xl-6">
+                            <form id="formEditarMedicine" data-id="{{ $medicine->id }}">
+                                <div class="row g-3">
+                                    <div class="col-12">
+                                        <label class="form-label" for="id">ID</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="ri-hashtag"></i></span>
+                                            <input type="text" class="form-control" id="id" value="#{{ $medicine->id }}" disabled>
+                                        </div>
+                                    </div>
 
-                        <div class="mb-3">
-                            <label class="form-label" for="quantity">Stock</label>
-                            <input type="number" class="form-control" id="quantity" name="quantity" value="{{ $medicine->quantity }}" min="0">
-                            <div class="invalid-feedback"></div>
-                        </div>
+                                    <div class="col-12">
+                                        <label class="form-label" for="name">Nombre <span class="text-danger">*</span></label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="ri-medicine-bottle-line"></i></span>
+                                            <input type="text" class="form-control" id="name" name="name" value="{{ $medicine->name }}" required>
+                                        </div>
+                                        <div class="invalid-feedback"></div>
+                                    </div>
 
-                        <div class="mb-3">
-                            <label class="form-label" for="unit_cost">Costo Unitario (S/)</label>
-                            <input type="number" step="0.01" class="form-control" id="unit_cost" name="unit_cost" min="0" value="{{ $medicine->unit_cost }}">
-                            <div class="invalid-feedback"></div>
-                        </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="quantity">Stock <span class="text-danger">*</span></label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="ri-box-3-line"></i></span>
+                                            <input type="number" class="form-control" id="quantity" name="quantity" value="{{ $medicine->quantity }}" min="0" required>
+                                        </div>
+                                        <div class="invalid-feedback"></div>
+                                    </div>
 
-                        <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-primary" id="btnActualizarMedicine">
-                                <i class="ri-save-line me-1"></i>Actualizar
-                            </button>
-                            <a href="{{ route('admin.medicines.index') }}" class="btn btn-light">Cancelar</a>
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="unit_cost">Costo Unitario (S/) <span class="text-danger">*</span></label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="ri-money-dollar-circle-line"></i></span>
+                                            <input type="number" step="0.01" class="form-control" id="unit_cost" name="unit_cost" min="0" value="{{ $medicine->unit_cost }}" required>
+                                        </div>
+                                        <div class="invalid-feedback"></div>
+                                    </div>
+                                </div>
+
+                                <div class="d-flex justify-content-end gap-2 pt-3 mt-2 border-top">
+                                    <a href="{{ route('admin.medicines.index') }}" class="btn btn-light waves-effect waves-light">
+                                        <i class="ri-close-line me-1"></i>Cancelar
+                                    </a>
+                                    <button type="submit" class="btn btn-primary waves-effect waves-light" id="btnActualizarMedicine">
+                                        <i class="ri-save-3-line me-1"></i>Actualizar
+                                    </button>
+                                </div>
+                            </form>
                         </div>
-                    </form>
+                    </div>
                 </div>
             </div>
         </div>

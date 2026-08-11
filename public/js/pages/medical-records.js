@@ -1,86 +1,148 @@
 $(function () {
     const medicamentos = window.medicines || [];
 
-function getFiltros() {
-        const $form = $("#formFiltros");
-        return $form.length ? $form.serializeArray().reduce((acc, campo) => {
-            if (campo.value) acc[campo.name] = campo.value;
-            return acc;
-        }, {}) : {};
+    const MAPA_TIPOS = {
+        cita: { label: "Cita", icono: "ri-calendar-check-line", clase: "bg-soft-info text-info" },
+        consulta: { label: "Cita", icono: "ri-calendar-check-line", clase: "bg-soft-info text-info" },
+        vacuna: { label: "Vacuna", icono: "ri-syringe-line", clase: "bg-soft-success text-success" },
+        cirugia: { label: "Cirugía", icono: "ri-scissors-2-line", clase: "bg-soft-primary text-primary" },
+        otro: { label: "Otro", icono: "ri-file-line", clase: "bg-soft-secondary text-secondary" },
+    };
+    const TIPOS_TABS = { todos: null, citas: ["consulta", "cita"], vacunas: "vacuna", cirugias: "cirugia" };
+    let historialCargado = [];
+
+    function renderTarjeta(evento) {
+        const meta = MAPA_TIPOS[evento.tipo] || MAPA_TIPOS.otro;
+        const notas = evento.notas ? evento.notas : "Sin notas registradas.";
+        return `
+            <a href="${evento.url}" class="text-decoration-none text-body">
+                <div class="card mb-3 medical-card shadow-sm">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="badge ${meta.clase}">
+                                <i class="${meta.icono} me-1"></i>${meta.label}
+                            </span>
+                            <small class="text-muted text-nowrap">
+                                <i class="ri-calendar-line me-1"></i>${evento.fecha || "-"}
+                            </small>
+                        </div>
+                        <h6 class="mb-2">${evento.pet_name || "Mascota"}</h6>
+                        <p class="small text-muted mb-2 notas-clamp">
+                            <i class="ri-sticky-note-line me-1"></i>${notas}
+                        </p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                <i class="ri-user-star-line me-1"></i>${evento.vet || "—"}
+                            </small>
+                            <small class="text-primary">
+                                Ver detalle <i class="ri-arrow-right-s-line"></i>
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        `;
     }
 
-    function cargarDatos() {
-        const tabla = $("#table-medical-records");
-        if (!tabla.length) return;
-        const url = "/admin/medical-records";
-
-        if (!$.fn.DataTable.isDataTable(tabla)) {
-            tabla.DataTable({
-                serverSide: true,
-                processing: true,
-                pageLength: 15,
-                ajax: function (data, callback) {
-                    const params = {
-                        per_page: data.length,
-                        page: Math.floor(data.start / data.length) + 1,
-                        search: data.search.value,
-                    };
-                    if (data.order && data.order.length) {
-                        params.sort_by = data.order[0].column;
-                        params.sort_dir = data.order[0].dir;
-                    }
-                    Object.assign(params, getFiltros());
-                    ajax.get(url, params).then((res) => {
-                        callback({
-                            draw: data.draw,
-                            recordsTotal: res.pagination.total,
-                            recordsFiltered: res.pagination.total,
-                            data: res.data.map((registro) => [
-                                registro.id,
-                                registro.pet_name || "-",
-                                registro.veterinarian || "-",
-                                registro.event_type,
-                                registro.event_date || "-",
-                                `
-                                    <a href="${registro.show_url}" class="btn btn-sm btn-outline-primary"><i class="ri-eye-line"></i></a>
-                                    <button type="button" class="btn btn-sm btn-outline-danger btn-eliminar" data-id="${registro.id}">
-                                        <i class="ri-delete-bin-line"></i>
-                                    </button>
-                                `,
-                            ]),
-                        });
-                    });
-                },
-                language: { url: "//cdn.datatables.net/plug-ins/1.13.11/i18n/es-ES.json" },
-                order: [[0, "desc"]],
-                columnDefs: [{ targets: [5], orderable: false }],
-            });
-        } else {
-            tabla.DataTable().ajax.reload();
+    function aEventoHistorial(r) {
+        if (r.event_type) {
+            return {
+                tipo: r.event_type,
+                fecha: r.event_date,
+                pet_name: r.pet_name,
+                vet: r.veterinarian,
+                notas: r.notes,
+                url: r.show_url,
+            };
         }
+        return {
+            tipo: "cita",
+            fecha: r.appointment_date,
+            pet_name: r.pet_name,
+            vet: r.veterinarian,
+            notas: r.reason,
+            url: r.edit_url,
+        };
     }
 
-    function construirDataTable() {
-        const tabla = $("#table-medical-records");
-        if (!tabla.length || $.fn.DataTable.isDataTable(tabla)) return;
+    function renderVacio(mensaje) {
+        return `
+            <div class="text-center py-5">
+                <div class="avatar-lg mx-auto mb-3 rounded-circle bg-soft-light d-flex align-items-center justify-content-center">
+                    <i class="ri-inbox-line fs-1 text-muted"></i>
+                </div>
+                <p class="text-muted mb-0">${mensaje}</p>
+            </div>
+        `;
+    }
 
-        tabla.DataTable({
-            language: { url: "//cdn.datatables.net/plug-ins/1.13.11/i18n/es-ES.json" },
-            order: [[0, "desc"]],
-            columnDefs: [{ targets: [5], orderable: false }],
+    function pintarTab(tipo, eventos) {
+        const pane = document.getElementById(`tab-${tipo}`);
+        if (!pane) return;
+        const tiposTab = TIPOS_TABS[tipo];
+        const filtrados = Array.isArray(tiposTab)
+            ? eventos.filter((e) => tiposTab.includes(e.tipo))
+            : tiposTab
+              ? eventos.filter((e) => e.tipo === tiposTab)
+              : eventos;
+
+        const badgeCount = document.getElementById(`count-${tipo}`);
+        if (badgeCount) badgeCount.textContent = filtrados.length;
+
+        const grid = $("<div>").addClass("row g-3");
+        if (!filtrados.length) {
+            grid.append(
+                `<div class="col-12">${renderVacio(
+                    tipo === "todos"
+                        ? "Esta mascota no tiene historial médico registrado."
+                        : `Sin ${tipo} para esta mascota.`
+                )}</div>`,
+            );
+        } else {
+            filtrados.forEach((e) => {
+                grid.append(`<div class="col-md-6 col-xl-4">${renderTarjeta(e)}</div>`);
+            });
+        }
+        $(pane).empty().append(grid);
+    }
+
+    function cargarHistorial(petId) {
+        Promise.all([
+            ajax.get("/admin/medical-records", { pet_id: petId }),
+            ajax.get("/admin/citas", { pet_id: petId, per_page: 100 }),
+        ]).then(([recordsRes, citasRes]) => {
+            historialCargado = [
+                ...(recordsRes.data || []),
+                ...(citasRes.data || []),
+            ]
+                .map(aEventoHistorial)
+                .sort((a, b) => (a.fecha || "").localeCompare(b.fecha || ""))
+                .reverse();
+            $("#bloqueHistorial").removeClass("d-none");
+            $("#estadoVacio").addClass("d-none");
+            Object.keys(TIPOS_TABS).forEach((tipo) => pintarTab(tipo, historialCargado));
         });
     }
 
-    function construirDataTable() {
-        const tabla = $("#table-medical-records");
-        if (!tabla.length || $.fn.DataTable.isDataTable(tabla)) return;
-
-        tabla.DataTable({
-            language: { url: "//cdn.datatables.net/plug-ins/1.13.11/i18n/es-ES.json" },
-            order: [[0, "desc"]],
-            columnDefs: [{ targets: [5], orderable: false }],
+    $("#filtro_pet_id").on("change", function () {
+        const petId = this.value;
+        historialCargado = [];
+        Object.keys(TIPOS_TABS).forEach((tipo) => {
+            const badgeCount = document.getElementById(`count-${tipo}`);
+            if (badgeCount) badgeCount.textContent = "0";
         });
-    }
+        if (!petId) {
+            $("#bloqueHistorial").addClass("d-none");
+            $("#estadoVacio").removeClass("d-none");
+            return;
+        }
+        cargarHistorial(petId);
+    });
+
+    $("#tabsHistorial").on("shown.bs.tab", "a[data-tipo]", function () {
+        const tipo = $(this).data("tipo");
+        if (tipo) pintarTab(tipo, historialCargado);
+    });
 
     function pintarErroresValidacion(xhr, formulario) {
         const $form = $(formulario);
@@ -98,7 +160,6 @@ function getFiltros() {
 
     $("#formFiltros").on("submit", function (e) {
         e.preventDefault();
-        cargarDatos();
     });
 
     function pintarRecetas(data = null) {
@@ -299,27 +360,4 @@ function getFiltros() {
             });
         });
     });
-
-    $(document).on("click", ".btn-eliminar", function () {
-        const $btn = $(this);
-        const id = $btn.data("id");
-        Swal.fire({
-            title: "¿Eliminar entrada?",
-            text: "Esta acción no se puede deshacer.",
-            icon: "warning",
-            showCancelButton: true,
-            confirmButtonText: "Sí, eliminar",
-            cancelButtonText: "Cancelar",
-        }).then((result) => {
-            if (!result.isConfirmed) return;
-            $.ajax({
-                url: `/api/admin/medical-records/${id}`,
-                method: "DELETE",
-                headers: { "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content") },
-                success: function () { cargarDatos(); },
-            });
-        });
-    });
-
-    cargarDatos();
 });

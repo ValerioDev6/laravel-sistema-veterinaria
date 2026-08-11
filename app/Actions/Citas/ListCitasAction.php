@@ -7,6 +7,7 @@ use App\Filters\Citas\FiltrarPorEspecie;
 use App\Filters\Citas\FiltrarPorEstado;
 use App\Filters\Citas\FiltrarPorFecha;
 use App\Filters\Citas\FiltrarPorVeterinario;
+use App\Filters\MedicalRecords\FiltrarPorPet;
 use App\Filters\Shared\OrdenarPor;
 use App\Models\Cita;
 use Illuminate\Http\Request;
@@ -24,6 +25,7 @@ class ListCitasAction
             ->through([
                 new FiltrarPorVeterinario($request),
                 new FiltrarPorEspecie($request),
+                new FiltrarPorPet($request),
                 new FiltrarPorEstado($request),
                 new FiltrarPorFecha($request),
                 new FiltrarPorBusquedaCitas($request),

@@ -101,7 +101,7 @@
                         {{-- 6. Resultado y notas --}}
                         <div class="col-md-6">
                             <label class="form-label" for="outcome">Resultado</label>
-                            <textarea class="form-control" id="outcome" name="outcome" rows="2"></textarea>
+                            <textarea class="form-control" id="outcome"s name="outcome" rows="2"></textarea>
                             <div class="invalid-feedback"></div>
                         </div>
                         <div class="col-md-6">

@@ -802,3 +802,54 @@ Audita `app/Http/Controllers/Api/Admin/**` completo. Para cada `index()` que ten
 - `PUT` de la misma cirugía manteniendo su fecha/hora → 200 (self-check ignora); cirugía seed del sábado sin horario → 200 manteniendo fecha; cirugía a hora conflictiva → 422.
 - Vistas create/edit → 200 con bloque de disponibilidad y `cirugiaEditarInit` presente.
 - BD restaurada tras pruebas (cirugía 3 devuelta a `2026-08-01 11:00`, 13 invoices, 7 payments, 3 cirugías). `php -l`, `node --check`, `view:cache` OK.
+
+---
+
+## Prompt #22 — 2026-08-11 (Index de Historial Médico con cards y tabs por tipo, sin DataTable)
+
+**Tipo:** Rediseño de UI del index de Historial Médico — cards clickeables + tabs Citas/Vacunas/Cirugías.
+
+**Contexto:** El usuario pidió mejorar el listado de `admin/medical-records`: mantener el filtro por mascota, pero al seleccionarla cargar su historial en **tarjetas (cards)** con **tabs por tipo** (Citas/Vacunas/Cirugías), en vez de la DataTable genérica con su auto-búsqueda y "Showing 1 to 10 entries". El show se deja igual ("déjalo como está"). Acordado en brainstorm: `Citas` = event_type `consulta`; los registros `otro` solo salen en **Todos**.
+
+**Cambios:**
+
+1. **`resources/views/admin/medical-records/index.blade.php`**:
+   - Eliminada la DataTable (`#table-medical-records`) y el form de filtrado por submit.
+   - Select de mascota (`#filtro_pet_id`) que **dispara con `change`** (no submit).
+   - Bloque (`#bloqueHistorial`, oculto por defecto) con **4 tabs** `nav-tabs-custom`: Todos / Citas (`ri-calendar-check-line`) / Vacunas (`ri-syringe-line`) / Cirugías (`ri-scissors-2-line`), cada uno con badge de contador (`#count-*`).
+   - Contenedor `#estadoVacio` como empty state "Selecciona una mascota para ver su historial médico".
+   - `<style>` con `.medical-card:hover` y `.notas-clamp` (máx 3 líneas con `-webkit-line-clamp`).
+2. **`public/js/pages/medical-records.js`** (index):
+   - Eliminado el bloque DataTable (`cargarDatos`, `construirDataTable`, `getFiltros`, handler submit).
+   - `MAPA_TIPOS` (consulta→Cita badge info, vacuna→Vacuna success, cirugia→Cirugía primary, otro→Otro secondary) y `TIPOS_TABS = {todos, citas:consulta, vacunas:vacuna, cirugias:cirugia}`.
+   - `renderTarjeta()` (card clickeable con link al show, badge de tipo, fecha `event_date`, vet, notas clamp) y `renderVacio()`.
+   - `pintarTab(tipo, eventos)`: filtra en cliente por `event_type` (todos = sin filtro, incluye `otro`), pinta el badge de contador y las cards en grid `col-md-6 col-xl-4`.
+   - `cargarHistorial(petId)`: `GET /api/admin/medical-records?pet_id=X` (mismo endpoint, filtro `FiltrarPorPet` ya existente), muestra el bloque de tabs y esconde el empty state.
+   - `$("#filtro_pet_id").on("change")` carga/resetea; `$("#tabsHistorial").on("shown.bs.tab", "a[data-tipo]")` repinta el tab al cambiarlo.
+   - Sin cambios en el bloque show/create (recetas, adjuntos, eliminar) — el archivo JS sigue sirviendo a esas vistas.
+
+**Verificado:**
+- `node --check medical-records.js` OK; `php -l` del blade OK; `view:cache` OK.
+- HTTP (150: index 200 con tabs `#tabsHistorial`, `#filtro_pet_id`, `#estadoVacio`, 4 `data-tipo`, 0 `table-medical-records`). OPcache requería ~1 min para refrescar la vista compilada vieja (revalidate_freq=180).
+- API `pet_id=12` (Chent) → 2 registros (vacuna + cirugía) con `event_type`, `event_date`, `veterinarian`, `notes`, `show_url` correctos.
+
+---
+
+## Prompt #22b — 2026-08-11 (Citas agendadas en el historial médico del index)
+
+**Tipo:** Corrección + mejora de datos — las citas agendadas de la mascota ahora se muestran en el historial médico del index.
+
+**Contexto:** El usuario reportó que una mascota con citas, cirugías y vacunas mostraba bien cirugías y vacunas, pero **las citas no salían**. La causa raíz: el tab "Citas" filtraba `medical_records` por `event_type=consulta`, y esa mascota no tenía un medical record de consulta — pero sí tenía citas agendadas en la tabla `citas` (ej. Chent tiene la cita #41 confirmada). Pedido: "si tiene citas, también deberían cargar ahí; en Todos con prefijo citas".
+
+**Cambios:**
+
+1. **`app/Actions/Citas/ListCitasAction.php`**: se agrega `new FiltrarPorPet($request)` (reutilizando `App\Filters\MedicalRecords\FiltrarPorPet`, que filtra `pet_id`) al pipeline → `GET /api/admin/citas?pet_id=X` ya devuelve solo las citas de esa mascota.
+2. **`public/js/pages/medical-records.js`** (index):
+   - `cargarHistorial(petId)` ahora usa `Promise.all` con **dos llamadas**: `GET /api/admin/medical-records?pet_id=X` + `GET /api/admin/citas?pet_id=X&per_page=100`, uniéndolas normalizadas con `aEventoHistorial()` (records → `{tipo, fecha, notas, url}`; citas → `{tipo:"cita", fecha:appointment_date, notas:reason, url:edit_url}`) y **ordenadas por fecha desc**.
+   - `MAPA_TIPOS` agrega `cita` (mismo label/badge "Cita" que `consulta`); `TIPOS_TABS.citas` pasa a ser **`["consulta","cita"]`** para mostrar tanto medical records de consulta como citas agendadas; `pintarTab` filtra por `Array.isArray(tiposTab) ? tiposTab.includes(e.tipo) : e.tipo === tiposTab`.
+   - `renderTarjeta` lee campos normalizados (`tipo/fecha/vet/notas/url`) en vez de los nombres crudos del resource.
+
+**Verificado:**
+- `node --check medical-records.js` OK; `php -l` de la Action OK; `view:cache` OK.
+- HTTP `GET /api/admin/citas?pet_id=12&per_page=100` → cita #41 (Chent, `2026-08-24 07:00`, confirmada).
+- Lógica simulada en node: mascota con 1 vacuna + 1 cirugía + 1 cita → **Todos** = 3 (cirugía 26/08, vacuna 25/08, cita 24/08), **Citas** = cita, **Vacunas** = vacuna, **Cirugías** = cirugía.

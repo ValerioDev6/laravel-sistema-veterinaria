@@ -195,10 +195,10 @@
 | Form Request Store/Update | `app/Http/Requests/Citas/StoreCitaRequest.php`, `UpdateCitaRequest.php` (valida contra `veterinarian_schedules` + cruce de citas) | ✅ |
 | Actions | `app/Actions/Citas/CreateCitaAction.php`, `UpdateCitaAction.php`, `CambiarEstadoCitaAction.php`, `DeleteCitaAction.php` (valida historial) | ✅ |
 | Filters | `app/Filters/Citas/{FiltrarPorVeterinario,FiltrarPorFecha,FiltrarPorEstado}.php` + `app/Filters/Pipeline.php` | ✅ |
-| Controller Api | `app/Http/Controllers/Api/Admin/CitaController.php` (index con pipeline, store, update, cambiarEstado, destroy) | ✅ |
+| Controller Api | `app/Http/Controllers/Api/Admin/CitaController.php` (index con pipeline, store, update, cambiarEstado, destroy, disponibilidad, calendario) | ✅ |
 | Resource | `app/Http/Resources/CitaResource.php` (paciente, veterinario, servicio) | ✅ |
 | Controller Admin | `app/Http/Controllers/Admin/CitaController.php` (index, create, edit, calendar) | ✅ |
-| Vistas | `admin/citas/{index,create,edit,calendar}.blade.php` (index con filtros; calendario FullCalendar CDN) | ✅ |
+| Vistas | `admin/citas/{index,create,edit,calendar}.blade.php` (index con filtros; calendario FullCalendar global + drawer derecho con estado editable) | ✅ |
 | JS | `public/js/pages/citas.js` + `public/js/pages/citas-calendar.js` | ✅ |
 | Seeder | `database/seeders/CitaSeeder.php` (8 citas, sembrado) | ✅ |
 | Modelo | `app/Models/Cita.php` (relación `veterinarian()` agregada) | ✅ |
@@ -511,7 +511,7 @@
 | admin/citas/index.blade.php | index + DataTable con filtros | Citas | 5 |
 | admin/citas/create.blade.php | create | Citas | 5 |
 | admin/citas/edit.blade.php | edit | Citas | 5 |
-| admin/citas/calendar.blade.php | calendar (FullCalendar CDN) | Citas | 5 |
+| admin/citas/calendar.blade.php | calendar (FullCalendar global, drawer derecho, leyenda vets) | Citas | 5 |
 | admin/vacunas/{index,create,edit}.blade.php | index + DataTable / create / edit | Vacunas | 6 |
 | admin/cirugias/{index,create,edit}.blade.php | index + DataTable / create / edit | Cirugias | 6 |
 | admin/medical-records/{index,create,show}.blade.php | index + DataTable / create (recetas dinámicas) / show (adjuntos) | MedicalRecords | 6 |
@@ -534,7 +534,7 @@
 | Pipeline de filtros: `Illuminate\Pipeline\Pipeline` real (`app(Pipeline::class)->send(...)->through([...])->thenReturn()`) + Filters con contrato `handle($query, Closure $next)` (instancias con `Request` inyectado) | Fix #5: sustituye el helper propio `App\Filters\Pipeline` y la firma estática inventada por el patrón nativo de Laravel | 9 |
 | Búsqueda global y ordenamiento extraídos de los `index()` a Filters **genéricos** `Shared/FiltrarPorBusqueda` + `Shared/OrdenarPor` (configurables por constructor), y cada listado vive en un `List{Modulo}Action` (único dueño de armar la query); el `index()` del controller queda delgado (inyecta la Action + envelope) | Fix #6: los 16 `index()` de `Api/Admin` repetían lógica cruda de `where/orWhere` de búsqueda y mapeo manual de columnas ordenables; el patrón variaba poco entre módulos → se hizo genérico en vez de 32 Filters por módulo. Los Filters de dominio (Species/Pet/Citas/Facturas) se conservan por módulo | 9 |
 | Validación de citas cruza `veterinarian_schedules` (día de semana + rango horario activo) y detecta cruce con otra cita del mismo vet/fecha/hora | Evita agendar fuera de horario o duplicado | 5 |
-| Calendario de citas con FullCalendar v6 vía CDN; evento click muestra detalle con Swal | Vista tipo calendario del plan | 5 |
+| Calendario de citas con FullCalendar v6 (CDN global en layout) + endpoint dedicado `ObtenerCitasCalendarioAction`/`CitaCalendarioResource` (todas las citas, color por veterinario, `extendedProps` con mascota/dueño/vet/costo/notas); evento click abre Drawer (Offcanvas derecho) con info + estado editable (PATCH estado); CSS propio + leyenda de veterinarios + tooltip | Vista tipo calendario del plan, enriquecida con info y edición de estado inline | 5 |
 | Facturas polimórficas (`invoiceable_type`/`invoiceable_id`) a Cita/Vacuna/Surgiere con etiqueta `invoiceableLabel()` en el Resource | Esquema original de la tabla `invoices` | 7 |
 | Status de invoice recalculado desde los pagos (pagado/parcial/pendiente) y por anulación (anulado) vía Actions [TX] | Consistencia del saldo con los pagos | 7 |
 | Registro de pagos anidado a factura (POST invoices/{invoice}/payments); anulación de pago con PATCH /payments/{payment}/anular | El plan 7.2 integra el pago dentro de la vista show de factura, sin listado propio | 7 |

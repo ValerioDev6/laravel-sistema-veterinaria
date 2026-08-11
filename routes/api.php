@@ -63,6 +63,10 @@ Route::prefix("admin")
             CitaController::class,
             "disponibilidad",
         ])->name("citas.disponibilidad");
+        Route::get("citas/calendario", [
+            CitaController::class,
+            "calendario",
+        ])->name("citas.calendario");
         Route::patch("citas/{cita}/estado", [
             CitaController::class,
             "cambiarEstado",

@@ -367,6 +367,9 @@
     <!-- Capa AJAX propia del proyecto -->
     <script src="{{ asset('js/config/ajax.js') }}"></script>
 
+    <!-- FullCalendar -->
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+
     @stack('scripts')
 </body>
 

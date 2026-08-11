@@ -6,11 +6,13 @@ use App\Actions\Citas\CambiarEstadoCitaAction;
 use App\Actions\Citas\CreateCitaAction;
 use App\Actions\Citas\DeleteCitaAction;
 use App\Actions\Citas\ListCitasAction;
+use App\Actions\Citas\ObtenerCitasCalendarioAction;
 use App\Actions\Citas\ObtenerDisponibilidadAction;
 use App\Actions\Citas\UpdateCitaAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Citas\StoreCitaRequest;
 use App\Http\Requests\Citas\UpdateCitaRequest;
+use App\Http\Resources\CitaCalendarioResource;
 use App\Http\Resources\CitaResource;
 use App\Models\Cita;
 use Illuminate\Http\JsonResponse;
@@ -50,6 +52,17 @@ class CitaController extends Controller
         return response()->json([
             "success" => true,
             "data" => $action->execute($request->input("fecha")),
+        ]);
+    }
+
+    public function calendario(
+        ObtenerCitasCalendarioAction $action,
+    ): JsonResponse {
+        $citas = $action->execute();
+
+        return response()->json([
+            "success" => true,
+            "data" => CitaCalendarioResource::collection($citas),
         ]);
     }
 

@@ -629,3 +629,32 @@ Audita `app/Http/Controllers/Api/Admin/**` completo. Para cada `index()` que ten
 - HTTP real: `GET /api/admin/citas/disponibilidad?fecha=2026-08-24` muestra `ocupados=['09:00']` en dr.torres; `POST /api/admin/citas` con hora ocupada → 422 "El veterinario ya tiene una cita a esa hora"; hora fuera de horario (14:30) → 422 correcto; hora libre (15:30) → 201. Cita temporal de prueba (id 38) eliminada después (citas quedan 9: seeds 1–8 + cita 37).
 
 ---
+## Prompt #17d — 2026-08-10 (Calendario de Citas profesional con Drawer lateral)
+
+**Tipo:** Mejora de UI (FullCalendar enriquecido) + endpoint dedicado de calendario
+
+**Contexto:** El usuario consideró el calendario de citas "pobre": los eventos eran solo `pet — vet`, al hacer clic se abría un Swal simple con servicio/estado/motivo, y la data venía del index paginado (10 por página → no se veían todas las citas). Pidió algo similar a su ejemplo NestJS/TypeORM (`CalendarioService.calendar()` con `extendedProps` ricos: mascota, dueño, veterinario, costo, notas, estado) y un **drawer lateral izquierdo** al hacer clic en la cita, con info de la cita y solo el campo **Estado** editable (guardado inline). Además pidió mover el CDN de FullCalendar al layout global y registrar el prompt.
+
+**Cambios:**
+
+1. **`resources/views/layouts/app.blade.php`** — CDN de FullCalendar v6.1.11 movido al layout global (junto a ajax.js), ya no se carga por vista.
+2. **Backend (endpoint dedicado):**
+   - Nuevo `app/Actions/Citas/ObtenerCitasCalendarioAction.php` — devuelve **todas** las citas (sin paginar) con `paciente.species/breed/owner`, `veterinarian`, `service`, `medical_records`.
+   - Nuevo `app/Http/Resources/CitaCalendarioResource.php` — shape nativo de FullCalendar: `id`, `title` (mascota), `start`/`end` (fecha+`H:i`, fin = hora + `duration_minutes` del servicio), `allDay`, `color` (por veterinario), y `extendedProps` con `status`, `status_label`, `veterinarian`, `veterinarian_id`, `vet_color`, `service`, `reason`, `cost` (service.base_price), `day` (nombre en español), `hora_atencion`, `notes` (primer `medical_record.notes`), `pet` (name/species/breed/owner/phone) y `edit_url`.
+   - `Api/Admin/CitaController@calendario` + ruta `GET api/admin/citas/calendario`.
+3. **`resources/views/admin/citas/calendar.blade.php`** — se quitó el CDN de la vista (ahora global); se agregó el **Offcanvas izquierdo** (`#offcanvasCita`, Bootstrap) con info de la cita (Veterinario, Mascota, Hora de Atención, Día, Costo, Servicio, Razón, Notas Médicas), un `<select>` de **Estado** y botones "Guardar cambios" + "Editar Cita" (enlaza a `edit_url`).
+4. **`public/js/pages/citas-calendar.js`** — reescrito: consume `GET /api/admin/citas/calendario` (todas las citas en una petición); `eventClick` abre el drawer (`bootstrap.Offcanvas`) rellenando la info y el estado actual; "Guardar cambios" hace `PATCH /api/admin/citas/{id}/estado` (endpoint `cambiarEstado` ya existía) → cierra el drawer y `refetchEvents()`. Swal de éxito/error lo muestra la capa AJAX global.
+5. **Ajustes de diseño (feedback del usuario sobre la 1ra versión):**
+   - **Color por veterinario** (no por estado): paleta de 10 colores fija en el Resource (`vet_color`), misma para todas las citas de un vet; el JS usa `vet_color` (sin duplicar paleta en front).
+   - **Drawer a la DERECHA** (`offcanvas-end`, no `offcanvas-start`).
+   - **CSS propio para estilizar FullCalendar** (`@push('styles')` en calendar.blade.php): cabecera con botones redondeados + accent #405189, eventos con borde izquierdo grueso y sombra, hover con elevación, celdas/días suaves, day-today resaltado, tooltip nativo (`eventMouseEnter` → `title` con mascota · hora · vet) y **leyenda de veterinarios** (chips con su color) bajo el calendario (idempotente en refetch).
+
+**Verificado:**
+- `php -l` OK en Action, Resource, Controller y rutas; `node --check` OK en citas-calendar.js; `view:cache` OK.
+- `route:list` confirma `api/admin/citas/calendario` y `admin.citas.calendar` (web, sidebar) sin conflicto.
+- tinker: el action trae las 9 citas; `CitaCalendarioResource::collection()->resolve()` produce el shape completo (ej. cita 1: Rocky, 2026-08-06T09:30 → 10:00, color #f43f5e por vet 2 dr.torres, S/60, día jueves, dueño María Quispe Huamán, edit_url ok; vet 3 → #10b981, vet 4 → #f59e0b).
+- Render del blade: `view('admin.citas.calendar')` contiene `offcanvas-end`, `offcanvasCita`, `leyendaVets`, estilos `fc-*` y el JS de la página.
+- HTTP real (con `php artisan serve`): `GET /api/admin/citas/calendario` devuelve todas las citas con `vet_color`; `PATCH /api/admin/citas/2/estado` cambió pendiente→confirmada→(restaurada a pendiente) con respuesta `{status,message,data}`. BD quedó intacta (9 citas, cita 2 pendiente).
+
+---
+

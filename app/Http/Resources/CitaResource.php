@@ -15,6 +15,8 @@ class CitaResource extends JsonResource
             "pet_name" => $this->paciente?->name,
             "veterinarian_id" => $this->veterinarian_id,
             "veterinarian" => $this->veterinarian?->username,
+            "created_by_user_id" => $this->created_by_user_id,
+            "created_by" => $this->user?->username,
             "service_id" => $this->service_id,
             "service" => $this->service?->name,
             "appointment_date" => $this->appointment_date?->format("Y-m-d"),

@@ -23,6 +23,7 @@ class UserResource extends JsonResource
             "is_active" => (bool) $this->is_active,
             "roles" => $this->getRoleNames()->values(),
             "edit_url" => route("admin.usuarios.edit", $this->id),
+            "movimientos_url" => route("admin.usuarios.movimientos", $this->id),
             "created_at" => $this->created_at,
         ];
     }

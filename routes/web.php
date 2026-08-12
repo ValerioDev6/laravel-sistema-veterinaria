@@ -73,6 +73,10 @@ Route::middleware("auth")
             UserController::class,
             "edit",
         ])->name("usuarios.edit");
+        Route::get("usuarios/{user}/movimientos", [
+            UserController::class,
+            "movimientos",
+        ])->name("usuarios.movimientos");
 
         Route::get("species", [SpeciesController::class, "index"])->name(
             "species.index",

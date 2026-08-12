@@ -99,6 +99,10 @@
                 u.edit_url +
                 '" class="btn btn-soft-primary btn-sm me-1" title="Editar">' +
                 '<i class="ri-pencil-line"></i></a>' +
+                '<a href="' +
+                (u.movimientos_url || "#") +
+                '" class="btn btn-soft-info btn-sm me-1" title="Movimientos">' +
+                '<i class="ri-file-chart-line"></i></a>' +
                 '<button type="button" class="btn btn-soft-danger btn-sm btn-eliminar-user" data-id="' +
                 u.id +
                 '" title="Eliminar"><i class="ri-delete-bin-line"></i></button>' +

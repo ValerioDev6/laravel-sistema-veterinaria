@@ -3,6 +3,7 @@
 namespace App\Actions\Citas;
 
 use App\Filters\Citas\FiltrarPorBusquedaCitas;
+use App\Filters\Citas\FiltrarPorCreadorCita;
 use App\Filters\Citas\FiltrarPorEspecie;
 use App\Filters\Citas\FiltrarPorEstado;
 use App\Filters\Citas\FiltrarPorFecha;
@@ -21,9 +22,10 @@ class ListCitasAction
     public function execute(Request $request): LengthAwarePaginator
     {
         $query = app(Pipeline::class)
-            ->send(Cita::with(["paciente.species", "veterinarian", "service"]))
+            ->send(Cita::with(["paciente.species", "veterinarian", "service", "user"]))
             ->through([
                 new FiltrarPorVeterinario($request),
+                new FiltrarPorCreadorCita($request),
                 new FiltrarPorEspecie($request),
                 new FiltrarPorPet($request),
                 new FiltrarPorEstado($request),

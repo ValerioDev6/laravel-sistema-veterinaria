@@ -26,8 +26,8 @@ Route::get("/user", function (Illuminate\Http\Request $request) {
     return $request->user();
 })->middleware("auth:api");
 
-// Route::middleware(["auth:api])
-Route::prefix("admin")
+Route::middleware("auth:api")
+    ->prefix("admin")
     ->name("admin.api.")
     ->group(function () {
         Route::get("calendario", [

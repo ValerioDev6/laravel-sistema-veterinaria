@@ -32,6 +32,8 @@ class CitaSeeder extends Seeder
             ["pet" => "Bruno", "vet" => "dr.ramos", "date" => "2026-08-11", "time" => "12:00", "status" => "pendiente", "reason" => "Control dermatológico"],
         ];
 
+        $recep = User::where("username", "ana.suy")->first();
+
         foreach ($citas as $cita) {
             $pet = Paciente::where("name", $cita["pet"])->first();
             $vet = User::where("username", $cita["vet"])->first();
@@ -53,7 +55,7 @@ class CitaSeeder extends Seeder
                 ],
                 [
                     "service_id" => $serviceId,
-                    "created_by_user_id" => $vet->id,
+                    "created_by_user_id" => $recep?->id ?? $vet->id,
                     "reason" => $cita["reason"],
                     "status" => $cita["status"],
                 ],

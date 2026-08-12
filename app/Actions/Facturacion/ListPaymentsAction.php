@@ -19,7 +19,7 @@ class ListPaymentsAction
             ->through([
                 new FiltrarPorEstadoPago($request),
                 new FiltrarPorBusqueda($request, ['status', 'payment_method']),
-                new OrdenarPor($request, [0 => 'id', 1 => 'status', 2 => 'amount', 3 => 'paid_at'], [3, 'desc']),
+                new OrdenarPor($request, [0 => 'id', 1 => 'status', 2 => 'amount', 3 => 'paid_at'], [0, 'desc']),
             ])
             ->thenReturn();
 

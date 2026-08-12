@@ -17,7 +17,7 @@ class ListPacientesAction
             ->send(Paciente::with(['owner', 'species', 'breed']))
             ->through([
                 new FiltrarPorBusqueda($request, ['name']),
-                new OrdenarPor($request, [0 => 'id', 1 => 'name'], [1, 'asc']),
+                new OrdenarPor($request, [0 => 'id', 1 => 'name'], [0, 'desc']),
             ])
             ->thenReturn();
 

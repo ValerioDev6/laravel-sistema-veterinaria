@@ -27,7 +27,7 @@ class ListMedicalRecordsAction
             ->through([
                 new FiltrarPorPet($request),
                 new FiltrarPorBusqueda($request, ['event_type', 'event_date']),
-                new OrdenarPor($request, [0 => 'id', 1 => 'event_date'], [1, 'desc']),
+                new OrdenarPor($request, [0 => 'id', 1 => 'event_date'], [0, 'desc']),
             ])
             ->thenReturn();
 

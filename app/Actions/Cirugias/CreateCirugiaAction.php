@@ -2,10 +2,10 @@
 
 namespace App\Actions\Cirugias;
 
+use App\Actions\Reminders\SincronizarReminderAction;
 use App\Models\Invoice;
 use App\Models\MedicalRecord;
 use App\Models\Payment;
-use App\Models\Reminder;
 use App\Models\Surgiere;
 use Illuminate\Support\Facades\DB;
 
@@ -38,7 +38,16 @@ class CreateCirugiaAction
             ]);
 
             self::registrarPago($cirugia, $data, $surgeryDate);
-            self::sincronizarReminder($cirugia, $data);
+
+            SincronizarReminderAction::execute(
+                "cirugia",
+                $cirugia->pet_id,
+                $cirugia->id,
+                $cirugia->surgery_date,
+                $cirugia->surgery_type
+                    ? "Cirugía: " . $cirugia->surgery_type
+                    : "Cirugía programada",
+            );
 
             return $cirugia->load([
                 "paciente",
@@ -93,29 +102,5 @@ class CreateCirugiaAction
                 "paid_at" => now(),
             ]);
         }
-    }
-
-    private static function sincronizarReminder(Surgiere $cirugia, array $data): void
-    {
-        $reminderDate = data_get($data, "reminder_date");
-
-        if (! $reminderDate) {
-            return;
-        }
-
-        Reminder::updateOrCreate(
-            [
-                "pet_id" => $cirugia->pet_id,
-                "remindable_type" => "cirugia",
-                "remindable_id" => $cirugia->id,
-            ],
-            [
-                "remind_at" => \Carbon\Carbon::parse($reminderDate),
-                "message" => $cirugia->surgery_type
-                    ? "Cirugía: " . $cirugia->surgery_type
-                    : "Cirugía programada",
-                "status" => "pendiente",
-            ],
-        );
     }
 }

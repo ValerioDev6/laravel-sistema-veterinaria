@@ -23,7 +23,7 @@ class ListRemindersAction
                 new FiltrarPorTipoReminder($request),
                 new FiltrarPorPetReminder($request),
                 new FiltrarPorEstadoReminder($request),
-                new OrdenarPor($request, [0 => "id", 1 => "remind_at"], [1, "asc"]),
+                new OrdenarPor($request, [0 => "id", 1 => "remind_at"], [0, "desc"]),
             ])
             ->thenReturn();
 

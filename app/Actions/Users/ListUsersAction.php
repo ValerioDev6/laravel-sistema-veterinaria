@@ -17,7 +17,7 @@ class ListUsersAction
             ->send(User::with('branch'))
             ->through([
                 new FiltrarPorBusqueda($request, ['username', 'email']),
-                new OrdenarPor($request, [0 => 'id', 1 => 'username', 2 => 'email'], [1, 'asc']),
+                new OrdenarPor($request, [0 => 'id', 1 => 'username', 2 => 'email'], [0, 'desc']),
             ])
             ->thenReturn();
 

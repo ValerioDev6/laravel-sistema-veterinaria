@@ -31,7 +31,7 @@ class ListVacunasAction
                 new FiltrarPorVeterinarioVacuna($request),
                 new FiltrarPorEstadoPagoVacuna($request),
                 new FiltrarPorFechaVacuna($request),
-                new OrdenarPor($request, [0 => "id", 1 => "vaccination_date"], [1, "desc"]),
+                new OrdenarPor($request, [0 => "id", 1 => "vaccination_date"], [0, "desc"]),
             ])
             ->thenReturn();
 

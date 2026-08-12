@@ -32,7 +32,7 @@ class ListCitasAction
                 new OrdenarPor(
                     $request,
                     [0 => 'id', 4 => 'appointment_date', 5 => 'appointment_time', 6 => 'status'],
-                    [4, 'desc'],
+                    [0, 'desc'],
                 ),
             ])
             ->thenReturn();

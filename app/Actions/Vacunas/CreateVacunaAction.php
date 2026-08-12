@@ -2,10 +2,10 @@
 
 namespace App\Actions\Vacunas;
 
+use App\Actions\Reminders\SincronizarReminderAction;
 use App\Models\Invoice;
 use App\Models\MedicalRecord;
 use App\Models\Payment;
-use App\Models\Reminder;
 use App\Models\Vacuna;
 use App\Models\VaccineType;
 use Illuminate\Support\Facades\DB;
@@ -48,16 +48,13 @@ class CreateVacunaAction
                 "notes" => "Vacunación: " . ($vacuna->vaccine_type?->name ?? ""),
             ]);
 
-            if (!empty(data_get($data, "next_due_date"))) {
-                Reminder::create([
-                    "pet_id" => data_get($data, "pet_id"),
-                    "remindable_type" => "vacuna",
-                    "remindable_id" => $vacuna->id,
-                    "remind_at" => data_get($data, "next_due_date"),
-                    "message" => "Próxima dosis de " . ($vacuna->vaccine_type?->name ?? "vacuna"),
-                    "status" => "pendiente",
-                ]);
-            }
+            SincronizarReminderAction::execute(
+                "vacuna",
+                $vacuna->pet_id,
+                $vacuna->id,
+                $vacuna->next_due_date,
+                "Próxima dosis de " . ($vacuna->vaccine_type?->name ?? "vacuna"),
+            );
 
             self::registrarPago($vacuna, $data);
 

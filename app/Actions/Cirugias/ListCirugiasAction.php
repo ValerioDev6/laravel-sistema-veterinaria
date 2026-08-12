@@ -31,7 +31,7 @@ class ListCirugiasAction
                 new FiltrarPorVeterinarioCirugia($request),
                 new FiltrarPorEstadoPagoCirugia($request),
                 new FiltrarPorFechaCirugia($request),
-                new OrdenarPor($request, [0 => "id", 1 => "surgery_date"], [1, "desc"]),
+                new OrdenarPor($request, [0 => "id", 1 => "surgery_date"], [0, "desc"]),
             ])
             ->thenReturn();
 

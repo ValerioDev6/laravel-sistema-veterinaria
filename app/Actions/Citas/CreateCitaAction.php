@@ -2,10 +2,10 @@
 
 namespace App\Actions\Citas;
 
+use App\Actions\Reminders\SincronizarReminderAction;
 use App\Models\Cita;
 use App\Models\Invoice;
 use App\Models\Payment;
-use App\Models\Reminder;
 use App\Models\Service;
 use Illuminate\Support\Facades\DB;
 
@@ -46,7 +46,14 @@ class CreateCitaAction
             ]);
 
             self::registrarPago($cita, $data);
-            self::sincronizarReminder($cita, $data);
+
+            SincronizarReminderAction::execute(
+                "cita",
+                $cita->pet_id,
+                $cita->id,
+                $cita->appointment_date,
+                $cita->reason ? "Cita: " . $cita->reason : "Cita programada",
+            );
 
             return $cita->fresh(['paciente', 'veterinarian', 'service']);
         });
@@ -84,29 +91,5 @@ class CreateCitaAction
         if ($advance >= $total && $cita->status === 'pendiente') {
             $cita->update(['status' => 'confirmada']);
         }
-    }
-
-    private static function sincronizarReminder(Cita $cita, array $data): void
-    {
-        $reminderDate = data_get($data, 'reminder_date');
-
-        if (! $reminderDate) {
-            return;
-        }
-
-        Reminder::updateOrCreate(
-            [
-                'pet_id' => $cita->pet_id,
-                'remindable_type' => 'cita',
-                'remindable_id' => $cita->id,
-            ],
-            [
-                'remind_at' => \Carbon\Carbon::parse($reminderDate),
-                'message' => $cita->reason
-                    ? 'Cita: ' . $cita->reason
-                    : 'Cita programada',
-                'status' => 'pendiente',
-            ],
-        );
     }
 }

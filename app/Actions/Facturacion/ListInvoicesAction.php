@@ -23,7 +23,7 @@ class ListInvoicesAction
                 new FiltrarPorRangoFecha($request),
                 new FiltrarPorOwner($request),
                 new FiltrarPorBusqueda($request, ['status', 'total']),
-                new OrdenarPor($request, [0 => 'id', 1 => 'status', 2 => 'total', 3 => 'issued_at'], [3, 'desc']),
+                new OrdenarPor($request, [0 => 'id', 1 => 'status', 2 => 'total', 3 => 'issued_at'], [0, 'desc']),
             ])
             ->thenReturn();
 

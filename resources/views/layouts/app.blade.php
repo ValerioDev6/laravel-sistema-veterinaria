@@ -13,6 +13,15 @@
     <!-- App favicon -->
     <link rel="shortcut icon" href="{{ asset('assets/images/favicon.ico') }}" />
 
+    <!-- Tema persistente (dark/light) -->
+    <script>
+        (function () {
+            var tema = localStorage.getItem("veus-theme-mode");
+            if (tema === "dark" || tema === "light") {
+                document.documentElement.setAttribute("data-bs-theme", tema);
+            }
+        })();
+    </script>
     <!-- Layout config Js -->
     <script src="{{ asset('assets/js/layout.js') }}"></script>
     <!-- Bootstrap Css -->
@@ -95,7 +104,7 @@
                                 id="page-header-notifications-dropdown" data-bs-toggle="dropdown"
                                 data-bs-auto-close="outside" aria-haspopup="true" aria-expanded="false">
                                 <i class="bx bx-bell fs-22"></i>
-                                <span
+                                <span id="badge-notificaciones"
                                     class="position-absolute topbar-badge fs-10 translate-middle badge rounded-pill bg-danger">0<span
                                         class="visually-hidden">unread notifications</span></span>
                             </button>
@@ -111,8 +120,10 @@
                                     </div>
                                 </div>
                                 <div class="py-2 ps-2" data-simplebar style="max-height: 300px;">
-                                    <div class="text-center py-4 text-muted">
-                                        No tienes notificaciones.
+                                    <div id="lista-notificaciones">
+                                        <div class="text-center py-4 text-muted">
+                                            Cargando…
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -366,6 +377,20 @@
     <script src="{{ asset('assets/libs/node-waves/waves.min.js') }}"></script>
     <script src="{{ asset('assets/js/app.js') }}"></script>
 
+    <!-- Tema: persistir el dark mode en localStorage -->
+    <script>
+        (function () {
+            var boton = document.querySelector(".light-dark-mode");
+            if (!boton) return;
+            boton.addEventListener("click", function () {
+                var tema = document.documentElement.getAttribute("data-bs-theme");
+                if (tema === "dark" || tema === "light") {
+                    localStorage.setItem("veus-theme-mode", tema);
+                }
+            });
+        })();
+    </script>
+
     <!-- jQuery (solo requerido por DataTables) -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <!-- DataTables JS -->
@@ -378,6 +403,9 @@
 
     <!-- Capa AJAX propia del proyecto -->
     <script src="{{ asset('js/config/ajax.js') }}"></script>
+
+    <!-- Notificaciones (campana del topbar) -->
+    <script src="{{ asset('js/pages/notificaciones.js') }}"></script>
 
     <!-- FullCalendar -->
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>

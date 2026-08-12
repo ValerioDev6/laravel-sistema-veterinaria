@@ -2,6 +2,7 @@
 
 namespace App\Actions\Vacunas;
 
+use App\Actions\Reminders\SincronizarReminderAction;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Vacuna;
@@ -38,6 +39,14 @@ class UpdateVacunaAction
 
             $vacuna->load(["vaccine_type", "paciente"]);
             self::registrarPago($vacuna, $data);
+
+            SincronizarReminderAction::execute(
+                "vacuna",
+                $vacuna->pet_id,
+                $vacuna->id,
+                $vacuna->next_due_date,
+                "Próxima dosis de " . ($vacuna->vaccine_type?->name ?? "vacuna"),
+            );
 
             return $vacuna->fresh(["vaccine_type", "paciente", "user", "invoice"]);
         });

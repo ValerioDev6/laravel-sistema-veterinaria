@@ -22,7 +22,6 @@ class StoreCirugiaRequest extends FormRequest
             "surgery_type" => ["nullable", "string", "max:100"],
             "surgery_date" => ["required", "date"],
             "surgery_time" => ["required", "date_format:H:i"],
-            "reminder_date" => ["nullable", "date"],
             "outcome" => ["nullable", "string"],
             "status" => ["required", "string", "in:pendiente,en_proceso,completada,cancelada"],
             "medical_notes" => ["nullable", "string"],

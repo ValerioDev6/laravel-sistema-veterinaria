@@ -40,16 +40,10 @@ class CitaController extends Controller
             ->with("payments")
             ->first();
 
-        $reminder = \App\Models\Reminder::where("pet_id", $cita->pet_id)
-            ->where("remindable_type", "cita")
-            ->where("remindable_id", $cita->id)
-            ->first();
-
         return view("admin.citas.edit", [
             "title" => "Editar Cita",
             "cita" => $cita,
             "invoice" => $invoice,
-            "reminder" => $reminder,
             "pacientes" => $this->pacientes(),
             "pacientesData" => $this->pacientesData(),
             "services" => $this->serviciosConPrecio(),

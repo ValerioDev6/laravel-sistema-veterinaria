@@ -101,20 +101,12 @@
                         {{-- 6. Resultado y notas --}}
                         <div class="col-md-6">
                             <label class="form-label" for="outcome">Resultado</label>
-                            <textarea class="form-control" id="outcome"s name="outcome" rows="2"></textarea>
+                            <textarea class="form-control" id="outcome" name="outcome" rows="2"></textarea>
                             <div class="invalid-feedback"></div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label" for="medical_notes">Notas médicas</label>
                             <textarea class="form-control" id="medical_notes" name="medical_notes" rows="2"></textarea>
-                            <div class="invalid-feedback"></div>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label" for="reminder_date">Recordatorio <span class="text-muted">(opcional)</span></label>
-                            <div class="input-group">
-                                <span class="input-group-text"><i class="ri-notification-3-line"></i></span>
-                                <input type="date" class="form-control" id="reminder_date" name="reminder_date">
-                            </div>
                             <div class="invalid-feedback"></div>
                         </div>
 

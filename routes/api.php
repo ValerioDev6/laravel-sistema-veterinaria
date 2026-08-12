@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\Admin\InvoiceController;
 use App\Http\Controllers\Api\Admin\MedicalRecordAttachmentController;
 use App\Http\Controllers\Api\Admin\MedicalRecordController;
 use App\Http\Controllers\Api\Admin\MedicineController;
+use App\Http\Controllers\Api\Admin\NotificacionController;
 use App\Http\Controllers\Api\Admin\OwnerController;
 use App\Http\Controllers\Api\Admin\PacienteController;
 use App\Http\Controllers\Api\Admin\PaymentController;
@@ -160,4 +161,9 @@ Route::prefix("admin")
             ReminderController::class,
             "cambiarEstado",
         ])->name("reminders.estado");
+
+        Route::get("notificaciones", [
+            NotificacionController::class,
+            "index",
+        ])->name("notificaciones.index");
     });

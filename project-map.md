@@ -16,7 +16,7 @@
 | 5 — Horario y citas | ✅ Completada | 2026-08-06 |
 | 6 — Módulo clínico | ✅ Completada | 2026-08-06 |
 | 7 — Facturación y pagos | ✅ Completada | 2026-08-06 |
-| 8 — Recordatorios | ⏳ Pendiente | |
+| 8 — Recordatorios | ✅ Completada | 2026-08-11 |
 | 9 — Reportes | 🚫 Fuera de alcance | |
 
 ---
@@ -326,12 +326,30 @@
 
 ---
 
-## Fase 8 — Recordatorios
+## Fase 8 — Recordatorios ✅ 2026-08-11
 
 ### Módulo: Reminders
 | Elemento | Archivo | Estado |
 |----------|---------|--------|
-| | | _Por completar al implementar_ |
+| Form Request | `app/Http/Requests/Reminders/UpdateReminderRequest.php` (solo `status` allowed) | ✅ |
+| Action [estado] | `app/Actions/Reminders/CambiarEstadoReminderAction.php` (pendiente → enviado/cancelado/pendiente) | ✅ |
+| Action [listado] | `app/Actions/Reminders/ListRemindersAction.php` (Pipeline único dueño de la query) | ✅ |
+| Filters | `app/Filters/Reminders/{FiltrarPorBusquedaReminders,FiltrarPorTipoReminder,FiltrarPorPetReminder,FiltrarPorEstadoReminder}.php` | ✅ |
+| Controller Api | `app/Http/Controllers/Api/Admin/ReminderController.php` (index con pipeline, cambiarEstado) | ✅ |
+| Resource | `app/Http/Resources/ReminderResource.php` (paciente, species, owner_name, type_label) | ✅ |
+| Controller Admin | `app/Http/Controllers/Admin/ReminderController.php` (index con pacientes para filtro) | ✅ |
+| Vistas | `admin/reminders/index.blade.php` (search + filtros mascota/tipo/estado + badge de estado) | ✅ |
+| JS | `public/js/pages/reminders.js` (DataTable serverSide + filtros + cambiar estado) | ✅ |
+| Seeder | `database/seeders/ReminderSeeder.php` (demo 11: cita/vacuna/cirugia, pendiente/enviado, idempotente) | ✅ |
+| Rutas | Web `admin.reminders.index` + API `admin.api.reminders.index` / `admin.api.reminders.estado` | ✅ |
+| Sidebar | Entrada "Recordatorios" → `admin.reminders.index` en sección Clínica | ✅ |
+
+**Decisiones técnicas Fase 8:**
+- Búsqueda considera el **texto del reminder** (`message`), el **tipo** (`remindable_type`) y el **nombre de la mascota** (vía `whereHas('paciente')`), cubriendo la relación con Paciente.
+- Filtros dedicados: `tipo` (cita/vacuna/cirugia; `surgiere` también mapea a Cirugía), `pet_id`, `status` (pendiente/enviado/cancelado). Orden por defecto: `remind_at` asc (próximos primero).
+- El estado se cambia vía PATCH `reminders/{reminder}/estado`; botones por fila: marcar enviado / cancelado / volver a pendiente.
+- Los reminders **no** se crean en este módulo: se generan como efecto secundario de las transacciones de Fase 6/5 (`CreateVacunaAction` → tipo `vacuna`). El `ReminderSeeder` inserta demo directo (por eso no pasa por la Action, igual que los otros seeders).
+- `ReminderResource::typeLabel()` reutiliza el match de InvoiceResource (`cita`→Cita, `vacuna`→Vacuna, `cirugia`/`surgiere`→Cirugía).
 
 ---
 
@@ -382,6 +400,7 @@
 | `admin/invoices` | Admin\InvoiceController | index | admin.invoices.index | 7 |
 | `admin/invoices/create` | Admin\InvoiceController | create | admin.invoices.create | 7 |
 | `admin/invoices/{invoice}` | Admin\InvoiceController | show | admin.invoices.show | 7 |
+| `admin/reminders` | Admin\ReminderController | index | admin.reminders.index | 8 |
 
 ### `routes/api.php` (Api/Admin)
 | Ruta | Controlador | Método | Nombre | Fase |
@@ -409,6 +428,8 @@
 | `api/admin/invoices/{invoice}/anular` (PATCH) | Api\Admin\InvoiceController | anular | admin.api.invoices.anular | 7 |
 | `api/admin/invoices/{invoice}/payments` (POST) | Api\Admin\PaymentController | store | admin.api.invoices.payments.store | 7 |
 | `api/admin/payments/{payment}/anular` (PATCH) | Api\Admin\PaymentController | anular | admin.api.payments.anular | 7 |
+| `api/admin/reminders` | Api\Admin\ReminderController | index | admin.api.reminders.index | 8 |
+| `api/admin/reminders/{reminder}/estado` (PATCH) | Api\Admin\ReminderController | cambiarEstado | admin.api.reminders.estado | 8 |
 
 ---
 
@@ -438,7 +459,8 @@
 | AnularInvoiceAction (bloquea si hay pagos pagados) | Facturacion | Sí | 7 |
 | RegistrarPagoAction (payment + recalcula invoice) | Facturacion | Sí | 7 |
 | AnularPagoAction (anula pago + recalcula invoice) | Facturacion | Sí | 7 |
-| List{Modulo}Action (16: Branches, Species, Breeds, Services, VaccineTypes, Medicines, Owners, Pacientes, Users, VeterinarianSchedules, Citas, Vacunas, Cirugias, MedicalRecords, Invoices, Payments) — único dueño de armar la query con Pipeline nativo, aplica búsqueda/orden + `->paginate()` | todos los módulos | No | 9 |
+| List{Modulo}Action (17: Branches, Species, Breeds, Services, VaccineTypes, Medicines, Owners, Pacientes, Users, VeterinarianSchedules, Citas, Vacunas, Cirugias, MedicalRecords, Invoices, Payments, Reminders) — único dueño de armar la query con Pipeline nativo, aplica búsqueda/orden + `->paginate()` | todos los módulos | No | 9 |
+| CambiarEstadoReminderAction (pendiente → enviado/cancelado/pendiente) | Reminders | No | 8 |
 
 ---
 
@@ -457,6 +479,7 @@
 | OrdenarPor (genérico, mapa ordenable + default por constructor) | transversal (todos los listados) | 9 |
 | FiltrarPorEstado (`status`) | Payments | 9 |
 | FiltrarPorBusquedaVacunas / FiltrarPorEspecieVacuna / FiltrarPorVeterinarioVacuna / FiltrarPorEstadoPagoVacuna / FiltrarPorFechaVacuna | Vacunas | 6 |
+| FiltrarPorBusquedaReminders / FiltrarPorTipoReminder / FiltrarPorPetReminder / FiltrarPorEstadoReminder | Reminders | 8 |
 
 ---
 
@@ -476,6 +499,7 @@
 | CitaResource | Citas | 5 |
 | VacunaResource / CirugiaResource / MedicalRecordResource / PrescriptionResource / VitalSignResource / MedicalRecordAttachmentResource | Módulo clínico | 6 |
 | InvoiceResource / PaymentResource | Facturación | 7 |
+| ReminderResource | Reminders | 8 |
 
 ---
 
@@ -522,6 +546,7 @@
 | admin/cirugias/{index,create,edit}.blade.php | index + DataTable / create / edit | Cirugias | 6 |
 | admin/medical-records/{index,create,show}.blade.php | index + DataTable / create (recetas dinámicas) / show (adjuntos) | MedicalRecords | 6 |
 | admin/facturacion/invoices/{index,create,show}.blade.php | index + DataTable con filtros / create (servicio dinámico) / show (pagos) | Invoices | 7 |
+| admin/reminders/index.blade.php | index + DataTable con filtros (search, mascota, tipo, estado) | Reminders | 8 |
 
 ---
 
@@ -549,6 +574,8 @@
 | El seeder de facturas factura solo servicios `completada` (citas/cirugías) y todas las vacunas con montos base fijos por tipo | Datos demo coherentes con el estado real de los servicios | 7 |
 | Los `index()` de `Api/Admin/*` que alimentan DataTable usan **`->paginate()` nativo** y devuelven un envelope agnóstico `{success, data, pagination}`; **no** devuelven el contrato DataTables. El plugin DataTables.net (CDN, ya server-side) recibe `draw/recordsTotal/recordsFiltered` reconstruidos por una función `ajax` en el JS que traduce `{success,data,pagination}`; el JS reenvía `search`/`sort_by`/`sort_dir` para conservar búsqueda global y ordenamiento por columna. Solo `index()` cambia; `store/update/destroy/show` conservan `{status,message,data,errors}` | Fix #5: elimina la clase custom `App\Filters\DataTables` (la librería JS ya incluye server-side, no hace falta wrapper PHP) | 9 |
 | Manejo de errores 422 en la capa AJAX compartida `public/js/config/ajax.js` como **single source of truth**: todo 422 muestra SIEMPRE SweetAlert2 con el mensaje real del backend (`response?.message` fallback al primer `errors`, fallback por método) y luego hace `reject()` para que la página pinte inline si quiere; título según método (`DELETE` = "No se pudo eliminar", resto = "No se pudo guardar"). Los `.catch(422)` redundantes con `Swal.fire` de los deletes se eliminaron (el Swal global ya los cubre) | Fix #7: el 422 llegaba al frontend pero quedaba invisible en Citas porque el campo `appointment_time` es `hidden` y la capa AJAX solo hacía `reject()` silencioso; se unifica para todos los módulos del admin (no solo Citas) | 5 |
+| La búsqueda de Reminders cubre `message` + `remindable_type` + `whereHas('paciente', name)`; filtros dedicados `tipo`/`pet_id`/`status`; orden por defecto `remind_at` asc | Cumple la Fase 8: listado de reminders pendientes con relación a Paciente y filtrar por tipo (cita/vacuna/cirugia) | 8 |
+| `ReminderResource::typeLabel()` reutiliza el match de InvoiceResource (`surgiere`→Cirugía por compatibilidad); seeder demo idempotente inserta directo (no pasa por Actions) | Dato demo para el listado (tabla `reminders` estaba vacía); los reminders reales solo los crean las transacciones clínicas | 8 |
 
 ---
 
@@ -566,3 +593,4 @@
 | Citas duplicadas en el mismo horario: diagnóstico confirmó que NO se duplica en BD (backend rechaza con 422 en Request y Action); causa raíz = bug de UI (422 silencioso en ajax.js + `appointment_time` hidden invisible). Fix: 422 muestra SIEMPRE Swal con el mensaje real backend en la capa AJAX compartida (título por método), se quitaron los Swal redundantes de 11 deletes | `public/js/config/ajax.js`, 11 `js/pages/*.js` (breeds, vaccine-types, usuarios, vacunas, citas, cirugias, medicines, pacientes, services, species, owners) | 2026-08-10 | `fixes/2026-08-06-citas-duplicadas.md` |
 | UI del módulo Vacunas replicando Citas: filtros (mascota/especie/veterinario/estado de pago/fecha), disponibilidad de veterinarios (fecha→vets→horas, agenda unificada con citas), sección Pago obligatoria (invoice + payment en TX); + `vaccination_time` y `base_price` en BD (migración + seeders) + filtros de Vacunas + CRUD vaccine-types con precio. Se corrigió además el bug preexistente de `UpdateVaccineTypeRequest` (`{$this->vaccineType->id}` era null → la regla unique usaba `route('vaccine_type')`) | `app/Actions/Vacunas/*`, `app/Filters/Vacunas/*`, `app/Http/Requests/Vacunas/*`, `VacunaResource`, `Api/Admin/VacunaController`, `Admin/VacunaController`, `routes/api.php`, `admin/vacunas/{index,create,edit}.blade.php`, `public/js/pages/vacunas.js`, `app/Http/Requests/VaccineTypes/UpdateVaccineTypeRequest.php`, `database/migrations/2026_08_11_000001_add_time_and_price_to_vacunas_and_vaccine_types.php`, `database/seeders/{VaccineTypeSeeder,VacunaSeeder}.php`, `db_sistema_veterinaria.sql` | 2026-08-11 | `fixes/2026-08-11-vacunas-ui.md` |
 | Update de Vacunas roto: `UpdateVacunaRequest` con `after_or_equal:today` impedía editar las 6 vacunas del seed (todas con fecha pasada → 422 siempre). Fix: la regla de `vaccination_date` en update es una Closure que permite la fecha original pasada; el input `min` de la vista edit usa la fecha original; la vacuna de Kiara movida de domingo (sin horario) a viernes; scripts reordenados (datos de init antes del IIFE de vacunas.js para que preview/preselección apliquen al cargar) | `app/Http/Requests/Vacunas/UpdateVacunaRequest.php`, `resources/views/admin/vacunas/edit.blade.php`, `database/seeders/VacunaSeeder.php` | 2026-08-11 | `fixes/2026-08-11-vacunas-ui.md` |
+| Módulo Reminders Fase 8 completo: listado (search texto+mascota+tipo, filtros mascota/tipo/estado, DataTable serverSide orden `remind_at` asc), cambiar estado (enviado/cancelado/volver pendiente vía PATCH), sidebar "Recordatorios", seeder demo idempotente (11 reminders cita/vacuna/cirugia) | `app/Http/Requests/Reminders/*`, `app/Actions/Reminders/*`, `app/Filters/Reminders/*`, `ReminderResource`, `Api/Admin/ReminderController`, `Admin/ReminderController`, `routes/{web,api}.php`, `admin/reminders/index.blade.php`, `public/js/pages/reminders.js`, `database/seeders/ReminderSeeder.php`, `layouts/app.blade.php`, `DatabaseSeeder.php` | 2026-08-11 | `fixes/2026-08-11-reminders-module.md` |

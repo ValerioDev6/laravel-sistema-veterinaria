@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\MedicalRecordController;
 use App\Http\Controllers\Admin\MedicineController;
 use App\Http\Controllers\Admin\OwnerController;
 use App\Http\Controllers\Admin\PacienteController;
+use App\Http\Controllers\Admin\ReminderController;
 use App\Http\Controllers\Admin\ServiceController;
 use App\Http\Controllers\Admin\SpeciesController;
 use App\Http\Controllers\Admin\UserController;
@@ -230,6 +231,10 @@ Route::middleware("auth")
             InvoiceController::class,
             "show",
         ])->name("invoices.show");
+
+        Route::get("reminders", [ReminderController::class, "index"])->name(
+            "reminders.index",
+        );
     });
 
 require __DIR__ . "/auth.php";

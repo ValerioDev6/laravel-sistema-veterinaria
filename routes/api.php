@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\Admin\MedicineController;
 use App\Http\Controllers\Api\Admin\OwnerController;
 use App\Http\Controllers\Api\Admin\PacienteController;
 use App\Http\Controllers\Api\Admin\PaymentController;
+use App\Http\Controllers\Api\Admin\ReminderController;
 use App\Http\Controllers\Api\Admin\ServiceController;
 use App\Http\Controllers\Api\Admin\SpeciesController;
 use App\Http\Controllers\Api\Admin\UserController;
@@ -150,4 +151,13 @@ Route::prefix("admin")
             UserController::class,
             "toggleStatus",
         ])->name("users.toggle-status");
+
+        Route::get("reminders", [
+            ReminderController::class,
+            "index",
+        ])->name("reminders.index");
+        Route::patch("reminders/{reminder}/estado", [
+            ReminderController::class,
+            "cambiarEstado",
+        ])->name("reminders.estado");
     });

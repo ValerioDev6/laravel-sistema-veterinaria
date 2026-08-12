@@ -41,10 +41,16 @@ class CirugiaController extends Controller
             ->with("payments")
             ->first();
 
+        $reminder = \App\Models\Reminder::where("pet_id", $cirugia->pet_id)
+            ->where("remindable_type", "cirugia")
+            ->where("remindable_id", $cirugia->id)
+            ->first();
+
         return view("admin.cirugias.edit", [
             "title" => "Editar Cirugía",
             "cirugia" => $cirugia,
             "invoice" => $invoice,
+            "reminder" => $reminder,
             "pacientes" => $this->pacientes(),
             "pacientesData" => $this->pacientesData(),
             "veterinarians" => $this->veterinarians(),

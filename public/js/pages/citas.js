@@ -88,6 +88,9 @@
             datos.append("appointment_time", appointment_time.value.trim());
         const reason = form.elements["reason"];
         if (reason) datos.append("reason", reason.value.trim());
+        const reminder_date = form.elements["reminder_date"];
+        if (reminder_date && reminder_date.value)
+            datos.append("reminder_date", reminder_date.value.trim());
         const status = form.elements["status"];
         if (status) datos.append("status", status.value.trim());
         const payment_method = form.elements["payment_method"];

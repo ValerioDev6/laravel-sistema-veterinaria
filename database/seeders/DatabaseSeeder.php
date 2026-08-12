@@ -29,6 +29,7 @@ class DatabaseSeeder extends Seeder
             MedicalRecordSeeder::class,
             InvoiceSeeder::class,
             PaymentSeeder::class,
+            ReminderSeeder::class,
         ]);
     }
 }

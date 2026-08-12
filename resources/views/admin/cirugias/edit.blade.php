@@ -116,6 +116,14 @@
                             <textarea class="form-control" id="medical_notes" name="medical_notes" rows="2">{{ $cirugia->medical_notes }}</textarea>
                             <div class="invalid-feedback"></div>
                         </div>
+                        <div class="col-md-4">
+                            <label class="form-label" for="reminder_date">Recordatorio <span class="text-muted">(opcional)</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="ri-notification-3-line"></i></span>
+                                <input type="date" class="form-control" id="reminder_date" name="reminder_date" value="{{ $reminder?->remind_at?->format('Y-m-d') }}">
+                            </div>
+                            <div class="invalid-feedback"></div>
+                        </div>
 
                         {{-- 7. Pago (obligatorio) --}}
                         <div class="col-12">

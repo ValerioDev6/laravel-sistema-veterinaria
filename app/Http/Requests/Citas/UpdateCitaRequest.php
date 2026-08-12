@@ -45,6 +45,7 @@ class UpdateCitaRequest extends FormRequest
             "appointment_date" => ["required", "date", "after_or_equal:today"],
             "appointment_time" => ["required", "date_format:H:i"],
             "reason" => ["nullable", "string"],
+            "reminder_date" => ["nullable", "date"],
             "reprogramming" => ["boolean"],
             "status" => ["nullable", "string", "in:pendiente,confirmada,completada,cancelada"],
             "payment_method" => [

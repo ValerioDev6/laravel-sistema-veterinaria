@@ -91,6 +91,7 @@
             "status",
             "outcome",
             "medical_notes",
+            "reminder_date",
             "total",
             "payment_method",
             "advance_amount",

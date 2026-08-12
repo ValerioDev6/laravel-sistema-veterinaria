@@ -943,3 +943,26 @@ Audita `app/Http/Controllers/Api/Admin/**` completo. Para cada `index()` que ten
 6. **`public/js/pages/invoices.js`**: se eliminó `construirDataTable()` (función muerta que duplicaba la inicialización); dos términos de búsqueda separados (`terminoBusquedaInvoices`/`terminoBusquedaPagos`); `getFiltros()` ignora el campo `search` para no pisar el término debounceado.
 
 **Verificado:** `node --check` de los 3 JS OK; `view:clear`/`view:cache` OK; índices y show 200 (login `carlos.torres@veterinaria.com`); API filtra: users `search=carlos`→1, schedules `search=1`→6 Lunes, payments `search=tarjeta`→2, invoices `search=pagado`→2.
+
+---
+
+## Prompt #27 — 2026-08-11 (Fase 8 completada: módulo Recordatorios)
+
+**Tipo:** Implementación de fase final — el módulo Reminders que faltaba (el único modelo sin uso real del sistema), con el formato de tabla unificado del resto del proyecto.
+
+**Prompt del usuario:** "implementar ese modulo de reminder, mismo formato de todo; un search que considere su texto (Reminder tiene relación con paciente, debería permitir filtrarse); el tipo son cirugia, cita y vacuna (3 tipos); registrarlo en prompts.md, proyecto-veterinaria.md y project-map.md; es la fase final 8".
+
+**Cambios:**
+
+1. **Form Request**: `app/Http/Requests/Reminders/UpdateReminderRequest.php` — solo `status` en `pendiente,enviado,cancelado`.
+2. **Actions**: `app/Actions/Reminders/CambiarEstadoReminderAction.php` (pendiente → enviado/cancelado/pendiente) y `ListRemindersAction.php` (Pipeline nativo con los 4 filtros + `OrdenarPor`).
+3. **Filters**: `app/Filters/Reminders/{FiltrarPorBusquedaReminders,FiltrarPorTipoReminder,FiltrarPorPetReminder,FiltrarPorEstadoReminder}.php`. La búsqueda cubre `message` (texto del reminder), `remindable_type` y `whereHas('paciente', name)` (relación con Paciente).
+4. **Resource**: `app/Http/Resources/ReminderResource.php` — paciente, species, owner_name, `type_label()` (`cita`→Cita, `vacuna`→Vacuna, `cirugia`/`surgiere`→Cirugía, reutiliza el match de InvoiceResource).
+5. **Controllers**: `Api/Admin/ReminderController` (index con envelope `{success,data,pagination}` + `cambiarEstado` PATCH) y `Admin/ReminderController` (index, pasa pacientes para el filtro de mascota).
+6. **Rutas**: web `admin.reminders.index` + API `admin.api.reminders.index` / `admin.api.reminders.estado` (PATCH `reminders/{reminder}/estado`).
+7. **Sidebar**: entrada "Recordatorios" (`ri-notification-3-line`) en la sección Clínica → `admin.reminders.index`.
+8. **Vista**: `admin/reminders/index.blade.php` — search propio + filtros Mascota/Tipo/Estado, DataTable serverSide, badges de tipo y estado, botones por fila (marcar enviado / cancelado / volver a pendiente).
+9. **JS**: `public/js/pages/reminders.js` — debounce 350ms, `searching:false`, filtros, cambiar estado con Swal.
+10. **Seeder**: `database/seeders/ReminderSeeder.php` (demo 11 reminders: 6 cita, 1 cirugia, 4 vacuna; pendiente/enviado; idempotente vía `updateOrCreate`) agregado al final del pipeline de `DatabaseSeeder`.
+
+**Verificado:** `php -l` (14 archivos) y `node --check` OK; `view:clear`/`view:cache` OK; seeder ejecutado (11 reminders); web `/admin/reminders` 200; API filtra: `search=cirug`→2, `search=Rocky`→2 (relación), `tipo=vacuna`→4, `status=enviado`→2, `pet_id=1`→2, `search=Próxima dosis`→4; PATCH estado 200 y status inválido 422. La tabla `reminders` estaba vacía; el seeder demo se creó para que el listado tenga contenido.

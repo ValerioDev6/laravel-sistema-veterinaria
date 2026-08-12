@@ -271,10 +271,10 @@ Estas 20 tablas son el alcance completo del plan. Las tablas de Spatie (`permiss
 - Registrar `payments` contra una factura (soporta pagos parciales, método: efectivo/tarjeta/transferencia/otro) → transacción (payment + actualización de `remaining_balance`/`status` del invoice)
 - Listado de facturas con estado (pendiente/pagado/parcial/anulado), filtros vía Pipeline
 
-### Fase 8: Recordatorios
+### Fase 8: Recordatorios — ✅ implementada 2026-08-11
 
-- Listado de `reminders` pendientes (próximas vacunas/citas)
-- Marcar como enviado/cancelado
+- Listado de `reminders` pendientes (próximas vacunas/citas/cirugías) ✅
+- Marcar como enviado/cancelado ✅
 
 ### Fase 9: Reportes básicos — **pendiente, no implementar aún**
 

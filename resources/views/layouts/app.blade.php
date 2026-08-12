@@ -269,6 +269,12 @@
                                 <span data-key="t-calendar">Calendario</span>
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link menu-link" href="{{ route('admin.reminders.index') }}">
+                                <i class="ri-notification-3-line"></i>
+                                <span data-key="t-reminders">Recordatorios</span>
+                            </a>
+                        </li>
 
                         <li class="menu-title">
                             <span data-key="t-finance">Facturación</span>

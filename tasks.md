@@ -285,16 +285,16 @@
 
 ## Fase 8 — Recordatorios
 
-### 8.1 Reminders
-- [ ] 8.1.1 Form Request: `UpdateReminderRequest`
-- [ ] 8.1.2 Action: `CambiarEstadoReminderAction`
-- [ ] 8.1.3 Controller Api: `Api/Admin/ReminderController`
-- [ ] 8.1.4 Rutas API: `admin/reminders`
-- [ ] 8.1.5 Resource: `ReminderResource`
-- [ ] 8.1.6 Controller Admin: `Admin/ReminderController`
-- [ ] 8.1.7 Rutas Web: `admin/reminders`
-- [ ] 8.1.8 Vista index: `admin/reminders/index.blade.php`
-- [ ] 8.1.9 JS de página: `reminders.js`
+### 8.1 Reminders ✅ 2026-08-11
+- [x] 8.1.1 Form Request: `UpdateReminderRequest`
+- [x] 8.1.2 Action: `CambiarEstadoReminderAction`
+- [x] 8.1.3 Controller Api: `Api/Admin/ReminderController`
+- [x] 8.1.4 Rutas API: `admin/reminders`
+- [x] 8.1.5 Resource: `ReminderResource`
+- [x] 8.1.6 Controller Admin: `Admin/ReminderController`
+- [x] 8.1.7 Rutas Web: `admin/reminders`
+- [x] 8.1.8 Vista index: `admin/reminders/index.blade.php`
+- [x] 8.1.9 JS de página: `reminders.js`
 
 ---
 

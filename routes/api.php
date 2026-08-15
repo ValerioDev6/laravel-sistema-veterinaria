@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\Admin\BreedController;
 use App\Http\Controllers\Api\Admin\CalendarioController;
 use App\Http\Controllers\Api\Admin\CitaController;
 use App\Http\Controllers\Api\Admin\CirugiaController;
+use App\Http\Controllers\Api\Admin\DashboardController;
 use App\Http\Controllers\Api\Admin\InvoiceController;
 use App\Http\Controllers\Api\Admin\MedicalRecordAttachmentController;
 use App\Http\Controllers\Api\Admin\MedicalRecordController;
@@ -13,7 +14,9 @@ use App\Http\Controllers\Api\Admin\NotificacionController;
 use App\Http\Controllers\Api\Admin\OwnerController;
 use App\Http\Controllers\Api\Admin\PacienteController;
 use App\Http\Controllers\Api\Admin\PaymentController;
+use App\Http\Controllers\Api\Admin\PermissionController;
 use App\Http\Controllers\Api\Admin\ReminderController;
+use App\Http\Controllers\Api\Admin\RoleController;
 use App\Http\Controllers\Api\Admin\ServiceController;
 use App\Http\Controllers\Api\Admin\SpeciesController;
 use App\Http\Controllers\Api\Admin\UserController;
@@ -30,6 +33,11 @@ Route::middleware("auth:api")
     ->prefix("admin")
     ->name("admin.api.")
     ->group(function () {
+        Route::get("dashboard", [
+            DashboardController::class,
+            "index",
+        ])->name("dashboard");
+
         Route::get("calendario", [
             CalendarioController::class,
             "index",
@@ -161,6 +169,17 @@ Route::middleware("auth:api")
             ReminderController::class,
             "cambiarEstado",
         ])->name("reminders.estado");
+
+        Route::apiResource("roles", RoleController::class)->only([
+            "index",
+            "store",
+            "update",
+            "destroy",
+        ]);
+        Route::get("permisos", [
+            PermissionController::class,
+            "index",
+        ])->name("permisos.index");
 
         Route::get("notificaciones", [
             NotificacionController::class,

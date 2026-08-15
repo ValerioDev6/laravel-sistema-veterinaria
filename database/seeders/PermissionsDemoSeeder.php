@@ -240,6 +240,7 @@ class PermissionsDemoSeeder extends Seeder
             "guard_name" => $guard,
             "name" => "Super-Admin",
         ]);
+        $superAdmin->syncPermissions(Permission::all()->pluck("name")->all());
 
         // Veterinario: solo lo clinico, no gestiona staff/roles/facturacion completa
         $veterinario = Role::firstOrCreate([

@@ -5,12 +5,15 @@ use App\Http\Controllers\Admin\BreedController;
 use App\Http\Controllers\Admin\CalendarioController;
 use App\Http\Controllers\Admin\CitaController;
 use App\Http\Controllers\Admin\CirugiaController;
+use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\InvoiceController;
 use App\Http\Controllers\Admin\MedicalRecordController;
 use App\Http\Controllers\Admin\MedicineController;
 use App\Http\Controllers\Admin\OwnerController;
 use App\Http\Controllers\Admin\PacienteController;
+use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\ReminderController;
+use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\ServiceController;
 use App\Http\Controllers\Admin\SpeciesController;
 use App\Http\Controllers\Admin\UserController;
@@ -24,9 +27,7 @@ Route::get("/", function () {
     return view("welcome");
 });
 
-Route::get("/dashboard", function () {
-    return view("dashboard");
-})
+Route::get("/dashboard", [DashboardController::class, "index"])
     ->middleware(["auth", "verified"])
     ->name("dashboard");
 
@@ -238,6 +239,19 @@ Route::middleware("auth")
 
         Route::get("reminders", [ReminderController::class, "index"])->name(
             "reminders.index",
+        );
+
+        Route::get("roles", [RoleController::class, "index"])->name(
+            "roles.index",
+        );
+        Route::get("roles/create", [RoleController::class, "create"])->name(
+            "roles.create",
+        );
+        Route::get("roles/{role}/edit", [RoleController::class, "edit"])->name(
+            "roles.edit",
+        );
+        Route::get("permisos", [PermissionController::class, "index"])->name(
+            "permisos.index",
         );
     });
 

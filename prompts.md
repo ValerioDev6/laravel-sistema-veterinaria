@@ -966,3 +966,51 @@ Audita `app/Http/Controllers/Api/Admin/**` completo. Para cada `index()` que ten
 10. **Seeder**: `database/seeders/ReminderSeeder.php` (demo 11 reminders: 6 cita, 1 cirugia, 4 vacuna; pendiente/enviado; idempotente vía `updateOrCreate`) agregado al final del pipeline de `DatabaseSeeder`.
 
 **Verificado:** `php -l` (14 archivos) y `node --check` OK; `view:clear`/`view:cache` OK; seeder ejecutado (11 reminders); web `/admin/reminders` 200; API filtra: `search=cirug`→2, `search=Rocky`→2 (relación), `tipo=vacuna`→4, `status=enviado`→2, `pet_id=1`→2, `search=Próxima dosis`→4; PATCH estado 200 y status inválido 422. La tabla `reminders` estaba vacía; el seeder demo se creó para que el listado tenga contenido.
+
+---
+
+## Prompt #28 — 2026-08-12 (Módulo Roles y Permisos)
+
+**Tipo:** Implementación de módulo de gestión — CRUD de roles con asignación de permisos (Spatie Laravel Permission), MVC tradicional con el mismo patrón del resto del panel (no API externa). El usuario pidió: módulo de roles y permisos, los roles se seleccionan con sus permisos, mismo formato de tablas del sistema (DataTable server-side + search manual), sidebar actualizado, sin tocar la protección de los demás módulos.
+
+**Decisiones acordadas en brainstorming:**
+1. Mismo patrón que los demás módulos (vistas Blade + `Api/Admin` para AJAX/DataTables server-side).
+2. Solo CRUD de roles + asignación de permisos por checkboxes agrupados por módulo; la lista de permisos es de solo lectura (se crean en el seeder).
+3. No se modifica la protección del panel (rutas admin solo piden `auth`).
+4. Protecciones: `Super-Admin` no se puede eliminar; un rol con usuarios asignados no se puede eliminar; confirmación SweetAlert2 antes de eliminar.
+
+**Cambios:**
+
+1. **Catálogo**: `app/Support/PermissionCatalog.php` — agrupa los 60 permisos del seeder en 16 módulos (Roles, Personal, Sucursales, Horarios, Propietarios, Pacientes, Especies y razas, Servicios, Citas, Vacunas, Cirugías, Historial clínico, Medicamentos, Facturación, Recordatorios, Reportes) con etiqueta en español; desconocidos caen en "Otros".
+2. **Form Requests**: `app/Http/Requests/Roles/StoreRoleRequest.php` y `UpdateRoleRequest.php` — `name` único por `guard_name = api` (Update ignora el rol actual vía `route('role')`), `permissions[]` opcional `exists:permissions,id`.
+3. **Actions**: `app/Actions/Roles/{CreateRoleAction,UpdateRoleAction,DeleteRoleAction,ListRolesAction}.php` y `app/Actions/Permisos/ListPermissionsAction.php`. Create/Update crean el rol con `guard_name = api` y `syncPermissions` de permisos del guard api + `forgetCachedPermissions`. Delete lanza `ValidationException` (422) si es Super-Admin o si el rol tiene usuarios (vía `model_has_roles`).
+4. **Filter**: `app/Filters/Permisos/FiltrarPorGrupoPermiso.php` — filtra por módulo del catálogo (grupo "Otros" = nombres fuera del catálogo).
+5. **Resources**: `app/Http/Resources/RoleResource.php` (name, guard, `permissions_count`, `users_count`, `is_super_admin`, edit_url) y `PermissionResource.php` (name, guard, grupo, label, `roles_count`).
+6. **Controllers API**: `Api/Admin/RoleController` (index con envelope `{success,data,pagination}` + store/update/destroy) y `Api/Admin/PermissionController` (index). Rutas: `admin.api.roles.*`, `admin.api.permisos.index`.
+7. **Controllers Web**: `Admin/RoleController` (index/create/edit; `gruposConPermisos()` arma los checkboxes agrupados) y `Admin/PermissionController` (index con grupos para filtro). Rutas: `admin.roles.*`, `admin.permisos.index`.
+8. **Vistas**: `admin/roles/{index,create,edit}.blade.php` y `admin/permisos/index.blade.php` — DataTable server-side con search manual (debounce 350ms), botones "Seleccionar todos"/"Limpiar" en formularios, aviso informativo al editar Super-Admin, badge en la tabla para Super-Admin, botón eliminar oculto para Super-Admin.
+9. **JS**: `public/js/pages/roles.js` y `public/js/pages/permisos.js`.
+10. **Sidebar**: `resources/views/layouts/app.blade.php` — entrada desplegable "Roles y Permisos" (`ri-shield-keyhole-line`) en la sección Configuración con sub-items Roles y Permisos.
+11. **Seeder**: `PermissionsDemoSeeder` — Super-Admin ahora recibe **todos** los permisos con `syncPermissions` (antes 0 en BD; el comentario referenciaba `Gate::before` que no existe en el proyecto). Se ejecutó: Super-Admin 60 permisos, Veterinario 19, Recepcionista 14.
+
+**Verificado:** `php -l` (17 archivos) y `node --check` (2 JS) OK; `view:cache` OK; `route:list` con las 7 rutas de roles y 2 de permisos; tinker: relaciones `Role::withCount(['users','permissions'])` y `Permission::withCount('roles')` OK; seeder re-ejecutado sin errores.
+
+---
+## Prompt #29 — 2026-08-15
+
+**Tipo:** Bugfix — error "Ocurrió un error / Unauthenticated" (401) en todos los módulos
+
+**Síntoma:** El usuario reportó que tras la implementación del dashboard aparecía el SweetAlert "Ocurrió un error / Unauthenticated" en todos los módulos del panel.
+
+**Diagnóstico (causa raíz):**
+- Se reprodujo el 401 con curl real: login HTTP + petición a `/api/admin/*` con headers AJAX.
+- Con `http://127.0.0.1:8000` y `Origin: http://localhost` el flujo funciona (sesión resuelve).
+- Con `Origin: http://localhost:8000` (lo que envía el navegador al abrir la app en `localhost:8000`) Sanctum no aplica la sesión → `auth:api` (guard `api`, driver `session`) responde 401 `Unauthenticated.`.
+- Causa: `EnsureFrontendRequestsAreStateful::fromFrontend()` compara `referer/origin` contra `config("sanctum.stateful")`. La lista por defecto es `localhost,localhost:3000,127.0.0.1,127.0.0.1:8000,::1` + `APP_URL` (sin puerto), así que `localhost:8000` NO matchea `localhost/*` → el request se trata como sin sesión.
+
+**Cambios:**
+
+1. **`.env`** — se agregó `SANCTUM_STATEFUL_DOMAINS=localhost,localhost:8000,127.0.0.1,127.0.0.1:8000,::1` (antes no existía la variable y se usaba el default de `config/sanctum.php`).
+2. **`app/Actions/Reminders/SincronizarReminderAction.php`** — se eliminaron ~200 espacios en blanco antes de `<?php` (FatalError previo: "Namespace declaration statement has to be the very first statement", visible en `storage/logs/laravel.log`). Esa clase la usan los Actions de citas, vacunas y cirugías.
+
+**Verificado:** `php -l` OK; clase `SincronizarReminderAction` cargable desde tinker; `php artisan test --filter=SessionApiAuthTest` → 2 passed; flujo end-to-end con sesión real vía `localhost:8000`: login 302 + 200 en `/api/admin/dashboard`, `branches`, `citas`, `owners`, `pacientes`, `reminders`, `notificaciones`.

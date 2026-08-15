@@ -18,6 +18,7 @@
 | 7 — Facturación y pagos | ✅ Completada | 2026-08-06 |
 | 8 — Recordatorios | ✅ Completada | 2026-08-11 |
 | 9 — Reportes | 🚫 Fuera de alcance | |
+| Roles y Permisos | ✅ Completada | 2026-08-12 |
 
 ---
 
@@ -28,6 +29,7 @@
 - Spatie Laravel Permission — roles: `Super-Admin`, `Veterinario`, `Recepcionista`
 - Guard `api` con driver `session`
 - `Gate::before` para Super-Admin
+- API autenticada por sesión (Sanctum stateful, `$middleware->statefulApi()` en `bootstrap/app.php`); los dominios stateful se definen en `.env` con `SANCTUM_STATEFUL_DOMAINS` (incluye `localhost:8000` — fix del Prompt #29; sin ello el navegador en `localhost:8000` recibe 401 `Unauthenticated` en toda la API).
 - **NO TOCAR**
 
 ### Layout
@@ -353,11 +355,52 @@
 
 ---
 
+## Módulo Roles y Permisos ✅ 2026-08-12
+
+> Gestión de roles (Spatie Laravel Permission) con asignación de permisos. Agregado a petición del usuario; no estaba en el plan original. No se tocó la protección de los demás módulos (las rutas admin siguen pidiendo solo `auth`).
+
+### Elementos
+| Elemento | Archivo | Estado |
+|----------|---------|--------|
+| Catálogo de permisos | `app/Support/PermissionCatalog.php` (16 grupos por módulo + etiquetas en español; desconocidos → "Otros") | ✅ |
+| Form Request Store/Update | `app/Http/Requests/Roles/StoreRoleRequest.php`, `UpdateRoleRequest.php` (name único por `guard_name=api`, Update ignora rol actual) | ✅ |
+| Actions | `app/Actions/Roles/{CreateRoleAction,UpdateRoleAction,DeleteRoleAction,ListRolesAction}.php` | ✅ |
+| Action | `app/Actions/Permisos/ListPermissionsAction.php` | ✅ |
+| Filter | `app/Filters/Permisos/FiltrarPorGrupoPermiso.php` (filtra por módulo del catálogo; "Otros" = fuera del catálogo) | ✅ |
+| Controller Api | `app/Http/Controllers/Api/Admin/RoleController.php` (index + store/update/destroy), `Api/Admin/PermissionController.php` (index) | ✅ |
+| Resources | `app/Http/Resources/RoleResource.php` (name, guard, permissions_count, users_count, is_super_admin, edit_url), `PermissionResource.php` (grupo, label, roles_count) | ✅ |
+| Controller Admin | `app/Http/Controllers/Admin/RoleController.php` (index/create/edit; `gruposConPermisos()`), `Admin/PermissionController.php` (index con grupos) | ✅ |
+| Vistas | `admin/roles/{index,create,edit}.blade.php`, `admin/permisos/index.blade.php` | ✅ |
+| JS | `public/js/pages/roles.js`, `public/js/pages/permisos.js` (DataTable serverSide + search manual + checkboxes) | ✅ |
+| Seeder | `PermissionsDemoSeeder` — Super-Admin ahora sincroniza TODOS los permisos (`syncPermissions`); se ejecutó: Super-Admin 60, Veterinario 19, Recepcionista 14 | ✅ |
+
+### Rutas
+- Web: `admin.roles.{index,create,edit}`, `admin.permisos.index`
+- API: `admin.api.roles.{index,store,update,destroy}`, `admin.api.permisos.index`
+
+### Decisiones técnicas
+| Decisión | Contexto |
+|----------|----------|
+| Los permisos del seeder se agrupan vía `PermissionCatalog` (16 módulos con etiquetas en español); permisos desconocidos caen en "Otros" | UI profesional de checkboxes agrupados sin hardcodear el listado en la vista |
+| `Create/UpdateRoleAction` crean el rol con `guard_name=api` y `syncPermissions` solo de permisos del guard api + `forgetCachedPermissions` | Consistencia con el seeder y el guard por defecto `api` |
+| `DeleteRoleAction` lanza 422: no se puede eliminar `Super-Admin` ni un rol con usuarios asignados (cuenta en `model_has_roles`) | Evita lockout y pérdida de datos; mensaje claro vía SweetAlert2 (capa ajax.js) |
+| Listado de permisos de solo lectura (no hay CRUD de permisos) | Acordado en brainstorming; los permisos se crean en el seeder |
+| `PermissionsDemoSeeder`: Super-Admin recibía 0 permisos (el comentario referenciaba `Gate::before`, que no existe en el proyecto) → se asignan todos con `syncPermissions` | Dato incoherente detectado al construir el módulo; se corrige el origen (seeder) |
+
+### Sidebar
+- `resources/views/layouts/app.blade.php`: entrada desplegable **"Roles y Permisos"** (`ri-shield-keyhole-line`) en Configuración, con sub-items **Roles** (`admin.roles.index`) y **Permisos** (`admin.permisos.index`).
+
+---
+
 ## Rutas registradas
 
 ### `routes/web.php` (Admin)
 | Ruta | Controlador | Método | Nombre | Fase |
 |------|-------------|--------|--------|------|
+| `admin/roles` | Admin\RoleController | index | admin.roles.index | Roles y Permisos |
+| `admin/roles/create` | Admin\RoleController | create | admin.roles.create | Roles y Permisos |
+| `admin/roles/{role}/edit` | Admin\RoleController | edit | admin.roles.edit | Roles y Permisos |
+| `admin/permisos` | Admin\PermissionController | index | admin.permisos.index | Roles y Permisos |
 | `admin/branches` | Admin\BranchController | index | admin.branches.index | 2 |
 | `admin/branches/create` | Admin\BranchController | create | admin.branches.create | 2 |
 | `admin/branches/{branch}/edit` | Admin\BranchController | edit | admin.branches.edit | 2 |
@@ -430,6 +473,8 @@
 | `api/admin/payments/{payment}/anular` (PATCH) | Api\Admin\PaymentController | anular | admin.api.payments.anular | 7 |
 | `api/admin/reminders` | Api\Admin\ReminderController | index | admin.api.reminders.index | 8 |
 | `api/admin/reminders/{reminder}/estado` (PATCH) | Api\Admin\ReminderController | cambiarEstado | admin.api.reminders.estado | 8 |
+| `api/admin/roles` | Api\Admin\RoleController | index/store/update/destroy | admin.api.roles.* | Roles y Permisos |
+| `api/admin/permisos` | Api\Admin\PermissionController | index | admin.api.permisos.index | Roles y Permisos |
 
 ---
 
@@ -461,6 +506,8 @@
 | AnularPagoAction (anula pago + recalcula invoice) | Facturacion | Sí | 7 |
 | List{Modulo}Action (17: Branches, Species, Breeds, Services, VaccineTypes, Medicines, Owners, Pacientes, Users, VeterinarianSchedules, Citas, Vacunas, Cirugias, MedicalRecords, Invoices, Payments, Reminders) — único dueño de armar la query con Pipeline nativo, aplica búsqueda/orden + `->paginate()` | todos los módulos | No | 9 |
 | CambiarEstadoReminderAction (pendiente → enviado/cancelado/pendiente) | Reminders | No | 8 |
+| CreateRoleAction (rol guard api + syncPermissions) / UpdateRoleAction / DeleteRoleAction (bloquea Super-Admin y roles con usuarios) / ListRolesAction | Roles | No | Roles y Permisos |
+| ListPermissionsAction | Permisos | No | Roles y Permisos |
 
 ---
 
@@ -480,6 +527,7 @@
 | FiltrarPorEstado (`status`) | Payments | 9 |
 | FiltrarPorBusquedaVacunas / FiltrarPorEspecieVacuna / FiltrarPorVeterinarioVacuna / FiltrarPorEstadoPagoVacuna / FiltrarPorFechaVacuna | Vacunas | 6 |
 | FiltrarPorBusquedaReminders / FiltrarPorTipoReminder / FiltrarPorPetReminder / FiltrarPorEstadoReminder | Reminders | 8 |
+| FiltrarPorGrupoPermiso (`grupo` del catálogo, "Otros" = fuera del catálogo) | Permisos | Roles y Permisos |
 
 ---
 
@@ -500,6 +548,8 @@
 | VacunaResource / CirugiaResource / MedicalRecordResource / PrescriptionResource / VitalSignResource / MedicalRecordAttachmentResource | Módulo clínico | 6 |
 | InvoiceResource / PaymentResource | Facturación | 7 |
 | ReminderResource | Reminders | 8 |
+| RoleResource / PermissionResource | Roles y Permisos | Roles y Permisos |
+| RoleResource / PermissionResource | Roles y Permisos | Roles y Permisos |
 
 ---
 
@@ -547,6 +597,10 @@
 | admin/medical-records/{index,create,show}.blade.php | index + DataTable / create (recetas dinámicas) / show (adjuntos) | MedicalRecords | 6 |
 | admin/facturacion/invoices/{index,create,show}.blade.php | index + DataTable con filtros / create (servicio dinámico) / show (pagos) | Invoices | 7 |
 | admin/reminders/index.blade.php | index + DataTable con filtros (search, mascota, tipo, estado) | Reminders | 8 |
+| admin/roles/{index,create,edit}.blade.php | index + DataTable con search / create (checkboxes agrupados) / edit (permisos marcados + aviso Super-Admin) | Roles y Permisos | Roles y Permisos |
+| admin/permisos/index.blade.php | index + DataTable read-only con search y filtro por módulo | Roles y Permisos | Roles y Permisos |
+| admin/roles/{index,create,edit}.blade.php | index + DataTable con search / create / edit (checkboxes de permisos agrupados por módulo) | Roles | Roles y Permisos |
+| admin/permisos/index.blade.php | index + DataTable read-only (search + filtro por módulo) | Permisos | Roles y Permisos |
 
 ---
 

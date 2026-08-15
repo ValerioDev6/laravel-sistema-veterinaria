@@ -302,3 +302,37 @@
 
 - [x] Actualizar `DatabaseSeeder.php` con todos los seeders en orden de dependencia (pipeline completo e idempotente)
 - [x] Cablear sidebar (`app.blade.php`): reemplazar `href="#"` con rutas reales por cada fase completada
+
+---
+
+## Módulo Roles y Permisos ✅ 2026-08-12
+
+- [x] R1 Catálogo: `app/Support/PermissionCatalog.php` (grupos por módulo + etiquetas en español)
+- [x] R2 Form Request: `StoreRoleRequest`, `UpdateRoleRequest` (name único por guard api)
+- [x] R3 Actions: `CreateRoleAction`, `UpdateRoleAction`, `DeleteRoleAction` (bloquea Super-Admin y roles con usuarios), `ListRolesAction`
+- [x] R4 Action: `ListPermissionsAction` + Filter `FiltrarPorGrupoPermiso`
+- [x] R5 Resources: `RoleResource`, `PermissionResource`
+- [x] R6 Controller Api: `Api/Admin/RoleController`, `Api/Admin/PermissionController` + rutas `admin.api.roles.*`, `admin.api.permisos.index`
+- [x] R7 Controller Admin: `Admin/RoleController`, `Admin/PermissionController` + rutas web `admin.roles.*`, `admin.permisos.index`
+- [x] R8 Vistas: `admin/roles/{index,create,edit}.blade.php`, `admin/permisos/index.blade.php` (DataTable server-side + search manual + checkboxes agrupados)
+- [x] R9 JS: `public/js/pages/roles.js`, `public/js/pages/permisos.js`
+- [x] R10 Sidebar: entrada "Roles y Permisos" en Configuración (Roles + Permisos)
+- [x] R11 Seeder: `PermissionsDemoSeeder` asigna todos los permisos a Super-Admin (60 en BD)
+
+---
+## Dashboard KPIs y perfil Velzon ✅ 2026-08-15
+
+- [x] D1 Action `ObtenerDashboardAction` (KPIs + charts + yearsDisponibles)
+- [x] D2 `Api/Admin/DashboardController` + ruta `admin.api.dashboard` (GET /api/admin/dashboard)
+- [x] D3 `Admin/DashboardController` + ruta web `/dashboard` (reemplaza closure)
+- [x] D4 Vista `resources/views/dashboard.blade.php` (4 KPIs + 4 mini + select año + 4 charts)
+- [x] D5 JS `public/js/pages/dashboard.js` (carga por año vía AJAX)
+- [x] D6 CDN Chart.js 4.4.1 en `layouts/app.blade.php`
+- [x] D7 Perfil reestilado a Velzon (edit + 3 partials, modal Bootstrap en lugar de x-modal Alpine)
+
+---
+## Bugfix sesión/401 ✅ 2026-08-15
+
+- [x] F1 `.env`: `SANCTUM_STATEFUL_DOMAINS` incluye `localhost:8000` (causa del 401 Unauthenticated en todos los módulos vía `localhost:8000`)
+- [x] F2 `SincronizarReminderAction.php`: eliminar espacios antes de `<?php` (FatalError de namespace)
+- [x] F3 Verificado: tests `SessionApiAuthTest` 2 passed + endpoints API 200 vía localhost:8000

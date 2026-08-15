@@ -329,6 +329,23 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link menu-link" href="#sidebarRoles" data-bs-toggle="collapse"
+                                role="button" aria-expanded="false" aria-controls="sidebarRoles">
+                                <i class="ri-shield-keyhole-line"></i>
+                                <span data-key="t-roles">Roles y Permisos</span>
+                            </a>
+                            <div class="collapse menu-dropdown" id="sidebarRoles">
+                                <ul class="nav nav-sm flex-column">
+                                    <li class="nav-item">
+                                        <a href="{{ route('admin.roles.index') }}" class="nav-link" data-key="t-roles-list">Roles</a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="{{ route('admin.permisos.index') }}" class="nav-link" data-key="t-permisos-list">Permisos</a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link menu-link" href="{{ route('admin.veterinarian-schedules.index') }}">
                                 <i class="ri-calendar-check-line"></i>
                                 <span data-key="t-schedules">Horarios</span>
@@ -406,6 +423,9 @@
 
     <!-- Notificaciones (campana del topbar) -->
     <script src="{{ asset('js/pages/notificaciones.js') }}"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
     <!-- FullCalendar -->
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>

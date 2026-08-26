@@ -62,6 +62,6 @@
     </div>
 
     @push('scripts')
-        <script src="{{ asset('js/pages/usuarios.js') }}"></script>
+        <script src="{{ asset('js/pages/usuarios.js') . "?v=2" }}"></script>
     @endpush
 </x-app-layout>

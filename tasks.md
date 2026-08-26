@@ -336,3 +336,26 @@
 - [x] F1 `.env`: `SANCTUM_STATEFUL_DOMAINS` incluye `localhost:8000` (causa del 401 Unauthenticated en todos los módulos vía `localhost:8000`)
 - [x] F2 `SincronizarReminderAction.php`: eliminar espacios antes de `<?php` (FatalError de namespace)
 - [x] F3 Verificado: tests `SessionApiAuthTest` 2 passed + endpoints API 200 vía localhost:8000
+
+---
+## Veterinarios con horarios integrados ✅ 2026-08-24
+
+- [x] V1 Requests Users: decodificar y validar `schedules` (JSON, varias franjas por día)
+- [x] V2 Action `SincronizarHorariosAction` + `CreateUserAction`/`UpdateUserAction` en TX (borra horarios si el rol deja de ser Veterinario)
+- [x] V3 `Admin\UserController@edit` precarga horarios ordenados
+- [x] V4 Card "Horario semanal" en `admin/usuarios/create|edit.blade.php` (7 días, franjas dinámicas, prellenado en edit)
+- [x] V5 `usuarios.js`: toggle por rol, recolección JSON, errores inline de horarios
+- [x] V6 Eliminar módulo standalone `veterinarian-schedules` completo (rutas, controllers, actions, requests, resource, vistas, JS, sidebar)
+- [x] V7 Verificado: flujo HTTP crear/editar/cambio de rol + validación 422 + regresión disponibilidad de citas
+
+## Módulo Veterinarios (matriz de horario) ✅ 2026-08-24
+
+- [x] W1 Requests `Veterinarios` que heredan de Users con `role` nullable (rol forzado server-side)
+- [x] W2 `ListVeterinariosAction` (solo rol Veterinario + eager horarios) y `VeterinarioResource` (agrega `horarios`, `edit_url` propio)
+- [x] W3 Controllers Admin/Api + rutas web/API (`parameters(["veterinarios" => "user"])` por `$this->user->id` en UpdateUserRequest)
+- [x] W4 `DeleteUserAction`: horarios ya no bloquean el borrado; se eliminan en cascada
+- [x] W5 Vistas `admin/veterinarios/{index,create,edit}` (index DataTable solo vets con columna "Horario de atención")
+- [x] W6 Matriz checkbox Lun-Sáb × 07:00-18:30: filas base + extensión dinámica si precarga supera el cierre; día-completo por columna; fusión de casillas contiguas → franjas; resumen horas/semana
+- [x] W7 Revert del módulo Personal a genérico (sin UI de horarios) + limpieza de usuarios.js (`?v=3`)
+- [x] W8 Sidebar: entrada propia "Veterinarios"
+- [x] W9 Verificado end-to-end contra servidor :8000 (crear/editar/422/toggle/borrado cascada, index solo vets, edit dr.paredes hasta 21:00 simulado en Node, regresión disponibilidad)

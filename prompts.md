@@ -1014,3 +1014,62 @@ Audita `app/Http/Controllers/Api/Admin/**` completo. Para cada `index()` que ten
 2. **`app/Actions/Reminders/SincronizarReminderAction.php`** — se eliminaron ~200 espacios en blanco antes de `<?php` (FatalError previo: "Namespace declaration statement has to be the very first statement", visible en `storage/logs/laravel.log`). Esa clase la usan los Actions de citas, vacunas y cirugías.
 
 **Verificado:** `php -l` OK; clase `SincronizarReminderAction` cargable desde tinker; `php artisan test --filter=SessionApiAuthTest` → 2 passed; flujo end-to-end con sesión real vía `localhost:8000`: login 302 + 200 en `/api/admin/dashboard`, `branches`, `citas`, `owners`, `pacientes`, `reminders`, `notificaciones`.
+
+---
+## Prompt #30 — 2026-08-24
+
+**Tipo:** Rediseño de módulo — registro de veterinarios con horarios integrado (elimina módulo standalone "Horarios")
+
+**Pedido del usuario:** Los horarios no pueden vivir en un módulo separado donde se elige el veterinario desde un select. Quiere registrar/editar un veterinario (usuario con rol `Veterinario`) y su horario semanal **en el mismo formulario** (`admin/usuarios/`), viendo las franjas precargadas al editar, siguiendo el diseño Velzon estándar. La vista standalone de Horarios se elimina.
+
+**Decisiones:**
+- Varias franjas por día (horario partido, ej. 09:00–13:00 y 15:00–19:00) — coincide con los datos sembrados y con `ObtenerDisponibilidadAction` (agenda unificada citas/vacunas/cirugías).
+- El módulo standalone `veterinarian-schedules` se elimina completo; se conservan el modelo, su seeder y la eliminación en cascada de `DeleteUserAction`.
+- Transporte: el formulario envía un único campo `schedules` con JSON (array de `{day_of_week, start_time, end_time}`) — evita depender del parseo de arrays anidados sobre multipart+PUT.
+- Si el rol cambia fuera de `Veterinario`, se borran sus horarios (un recepcionista no debe aparecer en la disponibilidad).
+
+**Cambios backend:**
+1. `app/Http/Requests/Users/StoreUserRequest.php` y `UpdateUserRequest.php` — `prepareForValidation()` decodifica el JSON de `schedules`; reglas `schedules.*.{day_of_week between:0,6, start_time H:i, end_time H:i after:start_time}`.
+2. `app/Actions/Users/SincronizarHorariosAction.php` (nuevo) — borra los horarios del usuario y reinserta las franjas con `is_active = true`.
+3. `app/Actions/Users/CreateUserAction.php` — envuelto en `DB::transaction()` (users + veterinarian_schedules); si rol `Veterinario`, sincroniza horarios.
+4. `app/Actions/Users/UpdateUserAction.php` — envuelto en `DB::transaction()`; sync de horarios si rol `Veterinario` (reemplazo completo) o borrado si el rol cambió fuera de `Veterinario`.
+5. `app/Http/Controllers/Admin/UserController@edit` — precarga `veterinarian_schedules` ordenado por día/hora, formateado a arrays planos `H:i`.
+
+**Cambios frontend:**
+6. `resources/views/admin/usuarios/create.blade.php` y `edit.blade.php` — card "Horario semanal" (`#cardHorariosUsuario`, oculta por defecto) con 7 bloques de día (Lun→Dom, Domingo al final); cada día con botón "+ Agregar franja" y hint "Sin horario este día". El edit inyecta `window.usuariosHorariosInit` con las franjas precargadas.
+7. `public/js/pages/usuarios.js` — toggle de visibilidad según rol seleccionado; franjas dinámicas (inicio–fin + quitar) con delegación de eventos; `recolectarDatos()` adjunta `schedules` (JSON) solo cuando el rol es `Veterinario`; errores 422 `schedules.N.start_time|end_time` marcados inline sobre la franja correspondiente.
+
+**Eliminación módulo standalone:**
+8. Borrados: `Admin/VeterinarianScheduleController`, `Api/Admin/VeterinarianScheduleController`, `Actions/VeterinarianSchedules/*` (4), `Requests/VeterinarianSchedules/*` (2), `VeterinarianScheduleResource`, vistas `admin/veterinarian-schedules/*` (3), `public/js/pages/veterinarian-schedules.js`, rutas web+API y entrada "Horarios" del sidebar.
+
+**Verificado:** `php -l` (6 archivos) OK; `node --check usuarios.js` OK; `view:cache` + `route:list` sin rutas huérfanas; flujo HTTP real (sesión + multipart PUT): crear vet con 3 franjas → 3 filas en BD; editar reemplaza (2 filas); cambio de rol a Recepcionista borra horarios (0); validación fin≤inicio → 422 `schedules.0.end_time`; render del edit con 7 días y JSON precargado; regresión `citas/disponibilidad` → 4 vets con slots desde los horarios sembrados.
+
+**Ajuste posterior (mismo día):** el usuario no ubicaba la UI de horarios. Se agregó hint bajo el select Rol en create/edit ("Si eliges Veterinario, aparecerá abajo el bloque para definir su horario semanal") y se versionó el include del JS (`usuarios.js?v=2`) en las 3 vistas para invalidar la caché del navegador.
+
+## Prompt #31 — 2026-08-24
+
+**Tipo:** Nuevo módulo "Veterinarios" con matriz de horario tipo checkbox + Personal vuelve a ser genérico
+
+**Pedido del usuario:** Quiere un módulo **sí o sí separado de "Veterinarios"** (el "Personal" es demasiado genérico: solo gestión usuario/password). El módulo nuevo tiene index propio (DataTable solo veterinarios), crear y editar propios. El horario se define como una **cuadrícula tipo checkbox**: días de lunes a sábado × horas desde 7:00 AM a 6:30 PM; marcas casillas y se arma el horario literal.
+
+**Decisiones:**
+- `Personal` queda genérico: se revierte toda la UI de horarios agregada en #30 (card, hint, JS). El backend de Users conserva TX + sincronizado/borrado por cambio de rol (regla intacta).
+- Matriz de horario: filas = bloques de 1 hora 07:00→18:00 + bloque final 18:00–18:30; columnas = Lun..Sáb con checkbox "día completo" en la cabecera.
+- Fusión automática: las casillas consecutivas se agrupan en rangos (`09:00+10:00+11:00` → franja `09:00-12:00`) — necesario para que `ValidarDisponibilidadCita` acepte citas que cruzan dos bloques contiguos.
+- Extensión dinámica sin pérdida: si los horarios precargados superan las 18:30 (ej. dr.paredes hasta 21:00), la matriz agrega filas extra de 30 min hasta cubrirlas; al guardar se reconstruyen exactas.
+- El módulo fuerza rol `Veterinario` server-side (los Requests extienden los de Users con `role` nullable; el controlador lo fija a `"Veterinario"`).
+
+**Cambios backend:**
+1. `app/Http/Requests/Veterinarios/{StoreVeterinarioRequest,UpdateVeterinarioRequest}.php` — heredan reglas+JSON de Users; solo relajan `role`.
+2. `app/Actions/Veterinarios/ListVeterinariosAction.php` — Pipeline estándar + `User::role("Veterinario")` + eager `branch`, `veterinarian_schedules`.
+3. `app/Http/Resources/VeterinarioResource.php` — extiende `UserResource`; agrega `horarios` (array plano) y sobrescribe `edit_url` → `admin.veterinarios.edit`.
+4. `Admin/VeterinarioController` (index/create/edit; edit con `abort_unless($user->hasRole(...))`) y `Api/Admin/VeterinarioController` (CRUD reutilizando CreateUser/UpdateUser/Delete/Toggle Actions).
+5. Rutas web (`admin/veterinarios|create|{user}/edit`) y API (`apiResource veterinarios ->only(...) ->parameters(["veterinarios" => "user"])` + toggle-status). **El renombrado del parámetro es crítico**: `UpdateUserRequest` usa `$this->user->id`.
+6. `DeleteUserAction`: los horarios dejaron de contar como dependencia que bloquea el borrado (son configuración del vet); ahora se eliminan en cascada antes del `delete()`.
+
+**Cambios frontend:**
+7. Vistas `admin/veterinarios/{index,create,edit}.blade.php` — patrón Velzon; create/edit sin select de rol + card "Horario de atención" (`#tablaHorarioVeterinario`, tbody generado por JS) + resumen de horas/semana; edit inyecta `window.veterinariosHorariosInit`.
+8. `public/js/pages/veterinarios.js` — DataTable server-side con columna "Horario de atención" (resumen agrupado por día); matriz checkbox (filas base + extensión, cabecera día-completo con estado indeterminate, resumen live); `recolectarFranjas()` fusiona casillas contiguas → JSON `schedules`; errores 422 de schedules marcados en la card.
+9. Limpieza de `usuarios.js` (bloque de franjas, manejo de errores schedules y recolección) + revert de vistas usuarios; include versionado a `usuarios.js?v=3`.
+
+**Verificado:** flujo HTTP real contra el servidor del usuario (:8000): crear vet con horario → rol Veterinario + franjas en BD; editar reemplaza (2 franjas); validación fin≤inicio → 422 `schedules.0.end_time`; toggle-status OK; eliminar → user 0 filas + horarios 0 filas (cascada); index API lista SOLO los 3 vets con sus horarios; edit de dr.paredes precarga JSON hasta 21:00 (extensión de matriz simulada en Node: 17 filas, reconstrucción exacta 07:00-12:00 y 16:00-21:00); regresión disponibilidad (3 vets con slots), Personal create sin card horarios, sidebar con entrada Veterinarios. Nota técnica: hubo que hacer `route:clear` para que el cambio de parámetro tomara efecto en el servidor corriendo.

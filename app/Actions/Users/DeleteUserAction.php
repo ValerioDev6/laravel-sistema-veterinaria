@@ -14,7 +14,6 @@ class DeleteUserAction
             "historiales" => $user->medical_records()->count(),
             "cirugías" => $user->surgieres()->count(),
             "vacunas" => $user->vacunas()->count(),
-            "horarios" => $user->veterinarian_schedules()->count(),
         ])->filter(fn ($count) => $count > 0);
 
         if ($dependencias->isNotEmpty()) {
@@ -23,6 +22,8 @@ class DeleteUserAction
                     $dependencias->keys()->implode(", ").".",
             ]);
         }
+
+        $user->veterinarian_schedules()->delete();
 
         $user->delete();
     }

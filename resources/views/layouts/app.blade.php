@@ -227,6 +227,12 @@
                             <span data-key="t-clinic">Clínica</span>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link menu-link" href="{{ route('admin.veterinarios.index') }}">
+                                <i class="ri-stethoscope-line"></i>
+                                <span data-key="t-vets">Veterinarios</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link menu-link" href="#sidebarAppointments" data-bs-toggle="collapse"
                                 role="button" aria-expanded="false" aria-controls="sidebarAppointments">
                                 <i class="ri-calendar-event-line"></i>
@@ -344,12 +350,6 @@
                                     </li>
                                 </ul>
                             </div>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link menu-link" href="{{ route('admin.veterinarian-schedules.index') }}">
-                                <i class="ri-calendar-check-line"></i>
-                                <span data-key="t-schedules">Horarios</span>
-                            </a>
                         </li>
                     </ul>
                 </div>

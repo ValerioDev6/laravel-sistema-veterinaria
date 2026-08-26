@@ -69,18 +69,33 @@
 | Seeder | `database/seeders/BranchSeeder.php` (3 sedes Lima) | ✅ |
 
 ### Módulo: Users
+> 2026-08-24 (Prompt #31): módulo genérico de personal (usuario/password). La gestión de horarios del veterinario vive en el módulo **Veterinarios**. El backend conserva TX + sync/borrado por cambio de rol.
 | Elemento | Archivo | Estado |
 |----------|---------|--------|
-| Form Request Store/Update | `app/Http/Requests/Users/StoreUserRequest.php`, `UpdateUserRequest.php` | ✅ |
-| Actions | `app/Actions/Users/CreateUserAction.php`, `UpdateUserAction.php`, `ToggleUserStatusAction.php`, `DeleteUserAction.php` | ✅ |
+| Form Request Store/Update | `app/Http/Requests/Users/StoreUserRequest.php`, `UpdateUserRequest.php` (decodifican JSON `schedules`; valida franjas por día) | ✅ |
+| Actions | `app/Actions/Users/CreateUserAction.php` [TX], `UpdateUserAction.php` [TX], `ToggleUserStatusAction.php`, `DeleteUserAction.php` (los horarios NO bloquean borrado: se eliminan en cascada), `SincronizarHorariosAction.php` (borra+reinserción de franjas; se llama desde Create/Update cuando el rol es `Veterinario`) | ✅ |
 | Image uploader | `app/Support/ImageUploader.php` (Cloudinary si se configura, local si no) | ✅ |
 | Migration is_active | `database/migrations/2026_08_06_010000_add_is_active_to_users_table.php` | ✅ |
 | Controller Api | `app/Http/Controllers/Api/Admin/UserController.php` (index, store, update, toggleStatus, destroy) | ✅ |
 | Resource | `app/Http/Resources/UserResource.php` (incluye roles) | ✅ |
-| Controller Admin | `app/Http/Controllers/Admin/UserController.php` (index, create, edit) | ✅ |
-| Vistas | `admin/usuarios/{index,create,edit}.blade.php` | ✅ |
+| Controller Admin | `app/Http/Controllers/Admin/UserController.php` (index, create, edit, movimientos) | ✅ |
+| Vistas | `admin/usuarios/{index,create,edit,movimientos}.blade.php` (genéricas, sin horarios; JS versionado `usuarios.js?v=3`) | ✅ |
 | JS | `public/js/pages/usuarios.js` | ✅ |
 | Seeder | `database/seeders/UserSeeder.php` (3 vet + 2 recepcionistas) | ✅ |
+
+---
+
+### Módulo: Veterinarios
+> 2026-08-24 (Prompt #31): módulo dedicado a veterinarios con su **horario tipo matriz checkbox** (Lun-Sáb × 07:00-18:30, extensión dinámica si la precarga supera el cierre; casillas contiguas se fusionan en franjas al guardar). Entrada del sidebar en la sección **Clínica** (primer ítem: los vets atienden citas/vacunas/cirugías), NO en Configuración — decisión del usuario tras dos reubicaciones.
+| Elemento | Archivo | Estado |
+|----------|---------|--------|
+| Form Request Store/Update | `app/Http/Requests/Veterinarios/{StoreVeterinarioRequest,UpdateVeterinarioRequest}.php` — heredan de Users con `role` nullable (el controller fuerza rol `Veterinario`) | ✅ |
+| Action List | `app/Actions/Veterinarios/ListVeterinariosAction.php` — Pipeline + `role("Veterinario")` + eager `branch`, `veterinarian_schedules` | ✅ |
+| Resource | `app/Http/Resources/VeterinarioResource.php` — extiende UserResource + `horarios` + `edit_url` propio | ✅ |
+| Controller Admin | `app/Http/Controllers/Admin/VeterinarioController.php` (index, create, edit con `abort_unless(hasRole)` y precarga de horarios) | ✅ |
+| Controller Api | `app/Http/Controllers/Api/Admin/VeterinarioController.php` (CRUD reutilizando Actions de Users; rol forzado server-side) | ✅ |
+| Vistas | `admin/veterinarios/{index,create,edit}.blade.php` (index DataTable solo vets con columna "Horario de atención"; create/edit con matriz `#tablaHorarioVeterinario` generada por JS + resumen horas/semana; edit inyecta `window.veterinariosHorariosInit`) | ✅ |
+| JS | `public/js/pages/veterinarios.js` (DataTable server-side; matriz: filas base 07:00→18:30 + extensión de 30 min según precarga, cabecera día-completo con indeterminate, fusión de casillas contiguas → JSON `schedules`, errores 422 en card) | ✅ |
 
 ---
 
@@ -178,18 +193,14 @@
 
 ## Fase 5 — Horario y citas
 
-### Módulo: Veterinarian Schedules
-| Elemento | Archivo | Estado |
-|----------|---------|--------|
-| Form Request Store/Update | `app/Http/Requests/VeterinarianSchedules/StoreScheduleRequest.php`, `UpdateScheduleRequest.php` | ✅ |
-| Actions | `app/Actions/VeterinarianSchedules/CreateScheduleAction.php`, `UpdateScheduleAction.php`, `DeleteScheduleAction.php` | ✅ |
-| Controller Api | `app/Http/Controllers/Api/Admin/VeterinarianScheduleController.php` (CRUD) | ✅ |
-| Resource | `app/Http/Resources/VeterinarianScheduleResource.php` (day_label, usuario) | ✅ |
-| Controller Admin | `app/Http/Controllers/Admin/VeterinarianScheduleController.php` (solo veterinarios con rol) | ✅ |
-| Vistas | `admin/veterinarian-schedules/{index,create,edit}.blade.php` | ✅ |
-| JS | `public/js/pages/veterinarian-schedules.js` | ✅ |
-| Seeder | `database/seeders/VeterinarianScheduleSeeder.php` (30 horarios L-V, sembrado) | ✅ |
-| Modelo | `app/Models/VeterinarianSchedule.php` (accessor `day_label` agregado) | ✅ |
+### Módulo: Veterinarian Schedules — ❌ ELIMINADO 2026-08-24 (Prompt #30)
+> El CRUD standalone fue eliminado y su función vive hoy en el **módulo Veterinarios** (`admin/veterinarios`, Prompt #31) con matriz checkbox de horario. Se conservan: el modelo `VeterinarianSchedule`, su seeder y la cascada de `DeleteUserAction`. La disponibilidad de citas/vacunas/cirugías sigue leyendo de `veterinarian_schedules` sin cambios.
+| Elemento | Estado |
+|----------|--------|
+| Rutas web + API (`veterinarian-schedules`) | 🗑️ Eliminadas |
+| Controllers Admin/Api, Actions, Requests, Resource | 🗑️ Eliminados |
+| Vistas `admin/veterinarian-schedules/*` + JS de página | 🗑️ Eliminados |
+| Entrada "Horarios" del sidebar | 🗑️ Eliminada |
 
 ### Módulo: Citas
 | Elemento | Archivo | Estado |
@@ -407,8 +418,10 @@
 | `admin/usuarios` | Admin\UserController | index | admin.usuarios.index | 2 |
 | `admin/usuarios/create` | Admin\UserController | create | admin.usuarios.create | 2 |
 | `admin/usuarios/{user}/edit` | Admin\UserController | edit | admin.usuarios.edit | 2 |
-| `admin/species` | Admin\SpeciesController | index | admin.species.index | 3 |
-| `admin/species/create` | Admin\SpeciesController | create | admin.species.create | 3 |
+| `admin/veterinarios` | Admin\VeterinarioController | index | admin.veterinarios.index | 31 |
+| `admin/veterinarios/create` | Admin\VeterinarioController | create | admin.veterinarios.create | 31 |
+| `admin/veterinarios/{user}/edit` | Admin\VeterinarioController | edit | admin.veterinarios.edit | 31 |
+| `admin/species` | Admin\SpeciesController | index | admin.species.index | 3 || `admin/species/create` | Admin\SpeciesController | create | admin.species.create | 3 |
 | `admin/species/{species}/edit` | Admin\SpeciesController | edit | admin.species.edit | 3 |
 | `admin/breeds` | Admin\BreedController | index | admin.breeds.index | 3 |
 | `admin/breeds/create` | Admin\BreedController | create | admin.breeds.create | 3 |
@@ -430,9 +443,6 @@
 | `admin/pacientes/create` | Admin\PacienteController | create | admin.pacientes.create | 4 |
 | `admin/pacientes/{paciente}/edit` | Admin\PacienteController | edit | admin.pacientes.edit | 4 |
 | `admin/pacientes/{paciente}` | Admin\PacienteController | show | admin.pacientes.show | 4 |
-| `admin/veterinarian-schedules` | Admin\VeterinarianScheduleController | index | admin.veterinarian-schedules.index | 5 |
-| `admin/veterinarian-schedules/create` | Admin\VeterinarianScheduleController | create | admin.veterinarian-schedules.create | 5 |
-| `admin/veterinarian-schedules/{schedule}/edit` | Admin\VeterinarianScheduleController | edit | admin.veterinarian-schedules.edit | 5 |
 | `admin/citas` | Admin\CitaController | index | admin.citas.index | 5 |
 | `admin/citas/create` | Admin\CitaController | create | admin.citas.create | 5 |
 | `admin/citas/{cita}/edit` | Admin\CitaController | edit | admin.citas.edit | 5 |
@@ -451,6 +461,8 @@
 | `api/admin/branches` | Api\Admin\BranchController | CRUD | admin.api.branches.* | 2 |
 | `api/admin/users` | Api\Admin\UserController | index/store/update/destroy | admin.api.users.* | 2 |
 | `api/admin/users/{user}/toggle-status` (PATCH) | Api\Admin\UserController | toggleStatus | admin.api.users.toggle-status | 2 |
+| `api/admin/veterinarios` | Api\Admin\VeterinarioController | index/store/update/destroy (rol forzado `Veterinario`) | admin.api.veterinarios.* (`parameters(["veterinarios" => "user"])`) | 31 |
+| `api/admin/veterinarios/{user}/toggle-status` (PATCH) | Api\Admin\VeterinarioController | toggleStatus | admin.api.veterinarios.toggle-status | 31 |
 | `api/admin/species` | Api\Admin\SpeciesController | CRUD | admin.api.species.* | 3 |
 | `api/admin/breeds` | Api\Admin\BreedController | CRUD | admin.api.breeds.* | 3 |
 | `api/admin/services` | Api\Admin\ServiceController | CRUD | admin.api.services.* | 3 |
@@ -459,7 +471,6 @@
 | `api/admin/owners` | Api\Admin\OwnerController | CRUD | admin.api.owners.* | 4 |
 | `api/admin/pacientes` | Api\Admin\PacienteController | CRUD + ficha | admin.api.pacientes.* | 4 |
 | `api/admin/pacientes/{p}/records/vacunas/cirugias` | Api\Admin\PacienteController | records/vacunas/cirugias | admin.api.pacientes.{records,vacunas,cirugias} | 4 |
-| `api/admin/veterinarian-schedules` | Api\Admin\VeterinarianScheduleController | CRUD | admin.api.veterinarian-schedules.* | 5 |
 | `api/admin/citas` | Api\Admin\CitaController | index/store/update/destroy | admin.api.citas.* | 5 |
 | `api/admin/citas/{cita}/estado` (PATCH) | Api\Admin\CitaController | cambiarEstado | admin.api.citas.estado | 5 |
 | `api/admin/vacunas` | Api\Admin\VacunaController | CRUD | admin.api.vacunas.* | 6 |
@@ -482,10 +493,8 @@
 | Action | Módulo | Transacción | Fase |
 |--------|--------|-------------|------|
 | CreateBranchAction / UpdateBranchAction / DeleteBranchAction | Branches | No | 2 |
-| CreateUserAction (hash + avatar + assignRole) | Users | No | 2 |
-| UpdateUserAction (hash opcional + avatar + syncRoles) | Users | No | 2 |
-| ToggleUserStatusAction | Users | No | 2 |
-| DeleteUserAction (valida dependencias) | Users | No | 2 |
+| CreateUserAction [TX: user + horarios] (hash + avatar + assignRole) / UpdateUserAction [TX] (hash opcional + avatar + syncRoles + sync horarios) / SincronizarHorariosAction (borra+reinserta franjas del vet) / ToggleUserStatusAction / DeleteUserAction (valida dependencias; horarios en cascada, no bloquean) | Users | Sí (create/update) | 2 |
+| ListVeterinariosAction (Pipeline + role Veterinario + eager branch/horarios); Requests `Veterinarios/*` heredan de Users con `role` nullable; `Api\Admin\VeterinarioController` fuerza rol server-side y reutiliza los Actions de Users | Veterinarios | No | 31 |
 | CreateSpeciesAction / UpdateSpeciesAction / DeleteSpeciesAction (valida razas, pacientes, vacunas) | Species | No | 3 |
 | CreateBreedAction / UpdateBreedAction / DeleteBreedAction (valida pacientes) | Breeds | No | 3 |
 | CreateServiceAction / UpdateServiceAction / DeleteServiceAction (valida citas) | Services | No | 3 |
@@ -493,7 +502,7 @@
 | CreateMedicineAction / UpdateMedicineAction / DeleteMedicineAction (valida prescripciones) | Medicines | No | 3 |
 | CreateOwnerAction / UpdateOwnerAction / DeleteOwnerAction (valida mascotas) | Owners | No | 4 |
 | CreatePacienteAction (sube foto) / UpdatePacienteAction (sube foto) / DeletePacienteAction (borra foto, valida citas) | Pacientes | No | 4 |
-| CreateScheduleAction / UpdateScheduleAction / DeleteScheduleAction | VeterinarianSchedules | No | 5 |
+| CreateScheduleAction / UpdateScheduleAction / DeleteScheduleAction | VeterinarianSchedules | — | ❌ Eliminadas 2026-08-24 (Prompt #30) |
 | CreateCitaAction (asigna created_by_user_id) / UpdateCitaAction / CambiarEstadoCitaAction / DeleteCitaAction (valida historial) | Citas | No | 5 |
 | CreateVacunaAction (vacuna + medical_record + reminder) / UpdateVacunaAction / DeleteVacunaAction (valida medical_records) | Vacunas | Sí | 6 |
 | ValidarDisponibilidadVacuna / ObtenerDisponibilidadAction (agenda unificada citas + vacunas) | Vacunas / Citas | No | 6 |
@@ -505,6 +514,9 @@
 | RegistrarPagoAction (payment + recalcula invoice) | Facturacion | Sí | 7 |
 | AnularPagoAction (anula pago + recalcula invoice) | Facturacion | Sí | 7 |
 | List{Modulo}Action (17: Branches, Species, Breeds, Services, VaccineTypes, Medicines, Owners, Pacientes, Users, VeterinarianSchedules, Citas, Vacunas, Cirugias, MedicalRecords, Invoices, Payments, Reminders) — único dueño de armar la query con Pipeline nativo, aplica búsqueda/orden + `->paginate()` | todos los módulos | No | 9 |
+| Horario semanal del veterinario integrado en `admin/usuarios/{create,edit}`: el form envía un solo campo JSON `schedules` (evita arrays anidados sobre multipart+PUT); `CreateUserAction`/`UpdateUserAction` en TX sincronizan vía `SincronizarHorariosAction`; si el rol deja de ser `Veterinario` se borran sus horarios (un recepcionista no debe aparecer en la disponibilidad); módulo standalone `veterinarian-schedules` eliminado completo (se conservan modelo, seeder y cascada de DeleteUserAction) | Users / VeterinarianSchedules | Sí | 2026-08-24 (Prompt #30) |
+| Módulo dedicado **Veterinarios** (`admin/veterinarios`, index DataTable solo vets con columna de horario): el horario se define como matriz checkbox Lun-Sáb × 07:00-18:30; casillas contiguas se fusionan en franjas al guardar (necesario para citas que cruzan dos bloques); si la precarga supera las 18:30 la matriz extiende filas de 30 min sin perder datos; Personal vuelve a ser genérico; `DeleteUserAction` ya no bloquea por horarios | Veterinarios / Users | Sí | 2026-08-24 (Prompt #31) |
+| El `php artisan serve` local corre con `opcache.enable_cli=On` y sirve código viejo tras editar PHP/Blade (síntomas: ruta nueva 404/param viejo, HTML de vista anterior pese a `view:cache`). Solución en este entorno: `php artisan route:clear` y/o **reiniciar el proceso serve** | Servidor dev | Sí | 2026-08-24 |
 | CambiarEstadoReminderAction (pendiente → enviado/cancelado/pendiente) | Reminders | No | 8 |
 | CreateRoleAction (rol guard api + syncPermissions) / UpdateRoleAction / DeleteRoleAction (bloquea Super-Admin y roles con usuarios) / ListRolesAction | Roles | No | Roles y Permisos |
 | ListPermissionsAction | Permisos | No | Roles y Permisos |
@@ -543,7 +555,8 @@
 | MedicineResource | Medicines | 3 |
 | OwnerResource | Owners | 4 |
 | PacienteResource | Pacientes | 4 |
-| VeterinarianScheduleResource | VeterinarianSchedules | 5 |
+| VeterinarianScheduleResource | VeterinarianSchedules | 5 → ❌ Eliminado 2026-08-24 (Prompt #30) |
+| VeterinarioResource (extiende UserResource + `horarios`) | Veterinarios | 31 |
 | CitaResource | Citas | 5 |
 | VacunaResource / CirugiaResource / MedicalRecordResource / PrescriptionResource / VitalSignResource / MedicalRecordAttachmentResource | Módulo clínico | 6 |
 | InvoiceResource / PaymentResource | Facturación | 7 |
@@ -585,9 +598,10 @@
 | admin/pacientes/create.blade.php | create (breed dinámico) | Pacientes | 4 |
 | admin/pacientes/edit.blade.php | edit | Pacientes | 4 |
 | admin/pacientes/show.blade.php | show (ficha con tabs) | Pacientes | 4 |
-| admin/veterinarian-schedules/index.blade.php | index + DataTable | VeterinarianSchedules | 5 |
-| admin/veterinarian-schedules/create.blade.php | create | VeterinarianSchedules | 5 |
-| admin/veterinarian-schedules/edit.blade.php | edit | VeterinarianSchedules | 5 |
+| admin/veterinarian-schedules/{index,create,edit}.blade.php | index + DataTable / create / edit | VeterinarianSchedules | ❌ Eliminadas 2026-08-24 (Prompt #30) — reemplazadas por el módulo Veterinarios (Prompt #31) |
+| admin/veterinarios/index.blade.php | index + DataTable (solo vets, columna "Horario de atención") | Veterinarios | 31 |
+| admin/veterinarios/create.blade.php | create + matriz checkbox de horario | Veterinarios | 31 |
+| admin/veterinarios/edit.blade.php | edit + matriz precargada (`veterinariosHorariosInit`) | Veterinarios | 31 |
 | admin/citas/index.blade.php | index + DataTable con filtros | Citas | 5 |
 | admin/citas/create.blade.php | create | Citas | 5 |
 | admin/citas/edit.blade.php | edit | Citas | 5 |

@@ -19,7 +19,7 @@ use App\Http\Controllers\Admin\SpeciesController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\VacunaController;
 use App\Http\Controllers\Admin\VaccineTypeController;
-use App\Http\Controllers\Admin\VeterinarianScheduleController;
+use App\Http\Controllers\Admin\VeterinarioController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -78,6 +78,19 @@ Route::middleware("auth")
             UserController::class,
             "movimientos",
         ])->name("usuarios.movimientos");
+
+        Route::get("veterinarios", [
+            VeterinarioController::class,
+            "index",
+        ])->name("veterinarios.index");
+        Route::get("veterinarios/create", [
+            VeterinarioController::class,
+            "create",
+        ])->name("veterinarios.create");
+        Route::get("veterinarios/{user}/edit", [
+            VeterinarioController::class,
+            "edit",
+        ])->name("veterinarios.edit");
 
         Route::get("species", [SpeciesController::class, "index"])->name(
             "species.index",
@@ -161,19 +174,6 @@ Route::middleware("auth")
             PacienteController::class,
             "show",
         ])->name("pacientes.show");
-
-        Route::get("veterinarian-schedules", [
-            VeterinarianScheduleController::class,
-            "index",
-        ])->name("veterinarian-schedules.index");
-        Route::get("veterinarian-schedules/create", [
-            VeterinarianScheduleController::class,
-            "create",
-        ])->name("veterinarian-schedules.create");
-        Route::get("veterinarian-schedules/{veterinarian_schedule}/edit", [
-            VeterinarianScheduleController::class,
-            "edit",
-        ])->name("veterinarian-schedules.edit");
 
         Route::get("citas", [CitaController::class, "index"])->name(
             "citas.index",

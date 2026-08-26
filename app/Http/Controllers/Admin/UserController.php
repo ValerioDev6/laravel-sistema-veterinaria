@@ -29,12 +29,27 @@ class UserController extends Controller
 
     public function edit(User $user): View
     {
+        $horarios = $user
+            ->veterinarian_schedules()
+            ->orderBy("day_of_week")
+            ->orderBy("start_time")
+            ->get()
+            ->map(
+                fn($h) => [
+                    "day_of_week" => (int) $h->day_of_week,
+                    "start_time" => $h->start_time->format("H:i"),
+                    "end_time" => $h->end_time->format("H:i"),
+                ],
+            )
+            ->values();
+
         return view("admin.usuarios.edit", [
             "title" => "Editar Usuario",
             "user" => $user->load("branch"),
             "roles" => $this->roles(),
             "branches" => $this->branches(),
             "userRoles" => $user->getRoleNames(),
+            "horarios" => $horarios,
         ]);
     }
 

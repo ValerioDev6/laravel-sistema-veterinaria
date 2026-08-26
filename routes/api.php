@@ -22,7 +22,7 @@ use App\Http\Controllers\Api\Admin\SpeciesController;
 use App\Http\Controllers\Api\Admin\UserController;
 use App\Http\Controllers\Api\Admin\VacunaController;
 use App\Http\Controllers\Api\Admin\VaccineTypeController;
-use App\Http\Controllers\Api\Admin\VeterinarianScheduleController;
+use App\Http\Controllers\Api\Admin\VeterinarioController;
 use Illuminate\Support\Facades\Route;
 
 Route::get("/user", function (Illuminate\Http\Request $request) {
@@ -63,11 +63,6 @@ Route::middleware("auth:api")
             PacienteController::class,
             "cirugias",
         ])->name("pacientes.cirugias");
-
-        Route::apiResource(
-            "veterinarian-schedules",
-            VeterinarianScheduleController::class,
-        );
 
         Route::apiResource("citas", CitaController::class)->only([
             "index",
@@ -160,6 +155,19 @@ Route::middleware("auth:api")
             UserController::class,
             "toggleStatus",
         ])->name("users.toggle-status");
+
+        Route::apiResource("veterinarios", VeterinarioController::class)
+            ->only([
+                "index",
+                "store",
+                "update",
+                "destroy",
+            ])
+            ->parameters(["veterinarios" => "user"]);
+        Route::patch("veterinarios/{user}/toggle-status", [
+            VeterinarioController::class,
+            "toggleStatus",
+        ])->name("veterinarios.toggle-status");
 
         Route::get("reminders", [
             ReminderController::class,
